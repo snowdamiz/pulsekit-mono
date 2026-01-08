@@ -17,76 +17,93 @@
   themes: false;
 }
 
-/* daisyUI theme plugin. You can update this file by fetching the latest version with:
-  curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
-  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+/* ============================================
+   PulseKit Custom Orange Theme
+   Unified color system for light and dark modes
+   ============================================ */
+
+/* Dark Theme - Deep charcoal with vibrant orange */
 @plugin "../vendor/daisyui-theme" {
   name: "dark";
   default: false;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-base-200: oklch(25.26% 0.014 253.1);
-  --color-base-300: oklch(20.15% 0.012 254.09);
-  --color-base-content: oklch(97.807% 0.029 256.847);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-secondary: oklch(58% 0.233 277.117);
-  --color-secondary-content: oklch(96% 0.018 272.314);
-  --color-accent: oklch(60% 0.25 292.717);
-  --color-accent-content: oklch(96% 0.016 293.756);
-  --color-neutral: oklch(37% 0.044 257.287);
-  --color-neutral-content: oklch(98% 0.003 247.858);
-  --color-info: oklch(58% 0.158 241.966);
-  --color-info-content: oklch(97% 0.013 236.62);
-  --color-success: oklch(60% 0.118 184.704);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
+  /* Base colors - warm charcoal tones */
+  --color-base-100: oklch(22% 0.01 60);
+  --color-base-200: oklch(18% 0.008 60);
+  --color-base-300: oklch(14% 0.006 60);
+  --color-base-content: oklch(95% 0.01 60);
+  /* Primary - Vibrant orange */
+  --color-primary: oklch(72% 0.18 50);
+  --color-primary-content: oklch(15% 0.02 50);
+  /* Secondary - Muted warm tone */
+  --color-secondary: oklch(55% 0.08 55);
+  --color-secondary-content: oklch(95% 0.01 55);
+  /* Accent - Bright amber */
+  --color-accent: oklch(78% 0.16 65);
+  --color-accent-content: oklch(15% 0.02 65);
+  /* Neutral - Warm gray */
+  --color-neutral: oklch(35% 0.02 60);
+  --color-neutral-content: oklch(95% 0.01 60);
+  /* Semantic colors */
+  --color-info: oklch(65% 0.15 240);
+  --color-info-content: oklch(98% 0.01 240);
+  --color-success: oklch(68% 0.16 155);
+  --color-success-content: oklch(98% 0.01 155);
+  --color-warning: oklch(75% 0.16 70);
+  --color-warning-content: oklch(15% 0.02 70);
+  --color-error: oklch(62% 0.22 25);
+  --color-error-content: oklch(98% 0.01 25);
+  /* Radii */
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
   --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
   --depth: 1;
   --noise: 0;
 }
 
+/* Light Theme - Clean whites with warm orange */
 @plugin "../vendor/daisyui-theme" {
   name: "light";
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
-  --color-secondary: oklch(55% 0.027 264.364);
-  --color-secondary-content: oklch(98% 0.002 247.839);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
-  --color-info: oklch(62% 0.214 259.815);
-  --color-info-content: oklch(97% 0.014 254.604);
-  --color-success: oklch(70% 0.14 182.503);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
+  /* Base colors - warm white tones */
+  --color-base-100: oklch(99% 0.005 60);
+  --color-base-200: oklch(96% 0.008 60);
+  --color-base-300: oklch(92% 0.01 60);
+  --color-base-content: oklch(25% 0.02 60);
+  /* Primary - Warm orange */
+  --color-primary: oklch(65% 0.20 45);
+  --color-primary-content: oklch(99% 0.01 45);
+  /* Secondary - Deep warm tone */
+  --color-secondary: oklch(45% 0.06 50);
+  --color-secondary-content: oklch(98% 0.01 50);
+  /* Accent - Burnt orange */
+  --color-accent: oklch(55% 0.18 40);
+  --color-accent-content: oklch(98% 0.01 40);
+  /* Neutral - Warm gray */
+  --color-neutral: oklch(40% 0.02 60);
+  --color-neutral-content: oklch(98% 0.01 60);
+  /* Semantic colors */
+  --color-info: oklch(55% 0.18 245);
+  --color-info-content: oklch(98% 0.01 245);
+  --color-success: oklch(55% 0.16 155);
+  --color-success-content: oklch(98% 0.01 155);
+  --color-warning: oklch(70% 0.17 70);
+  --color-warning-content: oklch(20% 0.02 70);
+  --color-error: oklch(55% 0.22 25);
+  --color-error-content: oklch(98% 0.01 25);
+  /* Radii */
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
   --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
   --depth: 1;
   --noise: 0;
 }
@@ -101,5 +118,349 @@
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* ============================================
+   Custom Theme Variables
+   ============================================ */
+
+:root {
+  /* Typography */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  
+  /* Shadows - Light mode */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  
+  /* Orange glow for accents */
+  --glow-orange: 0 0 20px -5px oklch(65% 0.20 45 / 0.3);
+  --glow-orange-strong: 0 0 30px -5px oklch(65% 0.20 45 / 0.5);
+}
+
+[data-theme="dark"] {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.35), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.15);
+  --shadow-card-hover: 0 8px 20px -4px rgb(0 0 0 / 0.35), 0 4px 8px -4px rgb(0 0 0 / 0.2);
+  --glow-orange: 0 0 25px -5px oklch(72% 0.18 50 / 0.35);
+  --glow-orange-strong: 0 0 35px -5px oklch(72% 0.18 50 / 0.55);
+}
+
+/* ============================================
+   Typography
+   ============================================ */
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* ============================================
+   Custom Utility Classes
+   ============================================ */
+
+/* Card styling */
+.pk-card {
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pk-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.pk-card-elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.pk-card-elevated:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* Sidebar specific */
+.pk-sidebar {
+  background: linear-gradient(180deg, var(--color-base-100) 0%, var(--color-base-200) 100%);
+}
+
+[data-theme="dark"] .pk-sidebar {
+  background: linear-gradient(180deg, oklch(20% 0.01 60) 0%, oklch(16% 0.008 60) 100%);
+}
+
+/* Nav link active indicator */
+.pk-nav-active {
+  position: relative;
+}
+
+.pk-nav-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Orange glow effect for focus */
+.pk-focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-base-100), 0 0 0 4px var(--color-primary);
+}
+
+/* Level badges */
+.pk-badge-fatal,
+.pk-badge-error {
+  background: oklch(55% 0.22 25 / 0.15);
+  color: oklch(55% 0.22 25);
+  border: 1px solid oklch(55% 0.22 25 / 0.3);
+}
+
+[data-theme="dark"] .pk-badge-fatal,
+[data-theme="dark"] .pk-badge-error {
+  background: oklch(62% 0.22 25 / 0.2);
+  color: oklch(75% 0.18 25);
+  border: 1px solid oklch(62% 0.22 25 / 0.4);
+}
+
+.pk-badge-warning {
+  background: oklch(70% 0.17 70 / 0.15);
+  color: oklch(55% 0.15 70);
+  border: 1px solid oklch(70% 0.17 70 / 0.3);
+}
+
+[data-theme="dark"] .pk-badge-warning {
+  background: oklch(75% 0.16 70 / 0.2);
+  color: oklch(80% 0.14 70);
+  border: 1px solid oklch(75% 0.16 70 / 0.4);
+}
+
+.pk-badge-info {
+  background: oklch(55% 0.18 245 / 0.15);
+  color: oklch(45% 0.15 245);
+  border: 1px solid oklch(55% 0.18 245 / 0.3);
+}
+
+[data-theme="dark"] .pk-badge-info {
+  background: oklch(65% 0.15 240 / 0.2);
+  color: oklch(75% 0.12 240);
+  border: 1px solid oklch(65% 0.15 240 / 0.4);
+}
+
+.pk-badge-debug {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border: 1px solid var(--color-base-300);
+}
+
+/* Code blocks */
+.pk-code {
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+[data-theme="dark"] .pk-code {
+  background: oklch(16% 0.008 60);
+  border-color: oklch(25% 0.01 60);
+}
+
+/* Stat card icon backgrounds */
+.pk-stat-icon {
+  background: oklch(65% 0.20 45 / 0.1);
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .pk-stat-icon {
+  background: oklch(72% 0.18 50 / 0.15);
+}
+
+.pk-stat-icon-error {
+  background: oklch(55% 0.22 25 / 0.1);
+  color: oklch(55% 0.22 25);
+}
+
+[data-theme="dark"] .pk-stat-icon-error {
+  background: oklch(62% 0.22 25 / 0.15);
+  color: oklch(70% 0.20 25);
+}
+
+.pk-stat-icon-warning {
+  background: oklch(70% 0.17 70 / 0.1);
+  color: oklch(60% 0.15 70);
+}
+
+[data-theme="dark"] .pk-stat-icon-warning {
+  background: oklch(75% 0.16 70 / 0.15);
+  color: oklch(75% 0.16 70);
+}
+
+.pk-stat-icon-info {
+  background: oklch(55% 0.18 245 / 0.1);
+  color: oklch(50% 0.16 245);
+}
+
+[data-theme="dark"] .pk-stat-icon-info {
+  background: oklch(65% 0.15 240 / 0.15);
+  color: oklch(70% 0.14 240);
+}
+
+/* Event row level indicators */
+.pk-event-indicator {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.pk-event-indicator-error { background: oklch(55% 0.22 25); }
+.pk-event-indicator-fatal { background: oklch(50% 0.25 25); }
+.pk-event-indicator-warning { background: oklch(70% 0.17 70); }
+.pk-event-indicator-info { background: oklch(55% 0.18 245); }
+.pk-event-indicator-debug { background: var(--color-base-300); }
+
+[data-theme="dark"] .pk-event-indicator-error { background: oklch(65% 0.20 25); }
+[data-theme="dark"] .pk-event-indicator-fatal { background: oklch(60% 0.22 25); }
+[data-theme="dark"] .pk-event-indicator-warning { background: oklch(75% 0.16 70); }
+[data-theme="dark"] .pk-event-indicator-info { background: oklch(65% 0.15 240); }
+
+/* Button refinements */
+.pk-btn {
+  transition: all 0.15s ease;
+  font-weight: 500;
+}
+
+.pk-btn:active {
+  transform: scale(0.98);
+}
+
+.pk-btn-primary {
+  box-shadow: var(--shadow-sm);
+}
+
+.pk-btn-primary:hover {
+  box-shadow: var(--shadow-md), var(--glow-orange);
+}
+
+/* Input refinements */
+.pk-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pk-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px oklch(65% 0.20 45 / 0.1);
+}
+
+[data-theme="dark"] .pk-input:focus {
+  box-shadow: 0 0 0 3px oklch(72% 0.18 50 / 0.15);
+}
+
+/* Table refinements */
+.pk-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.pk-table thead th {
+  background: var(--color-base-200);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-base-content);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--color-base-300);
+}
+
+.pk-table tbody tr {
+  transition: background-color 0.1s ease;
+}
+
+.pk-table tbody tr:hover {
+  background: var(--color-base-200);
+}
+
+/* Dropdown refinements */
+.pk-dropdown {
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Modal refinements */
+.pk-modal-backdrop {
+  background: oklch(0% 0 0 / 0.5);
+  backdrop-filter: blur(4px);
+}
+
+[data-theme="dark"] .pk-modal-backdrop {
+  background: oklch(0% 0 0 / 0.7);
+}
+
+.pk-modal-box {
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-base-300);
+}
+
+/* Empty state styling */
+.pk-empty-icon {
+  color: var(--color-base-content);
+  opacity: 0.2;
+}
+
+/* Logo glow effect */
+.pk-logo-glow {
+  box-shadow: var(--glow-orange);
+}
+
+/* Status dot */
+.pk-status-active {
+  background: var(--color-primary);
+  box-shadow: 0 0 8px oklch(65% 0.20 45 / 0.5);
+}
+
+[data-theme="dark"] .pk-status-active {
+  box-shadow: 0 0 8px oklch(72% 0.18 50 / 0.6);
+}
+
+.pk-status-inactive {
+  background: var(--color-base-300);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-base-200);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-base-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral);
+}
 
 /* This file is for your main application CSS */

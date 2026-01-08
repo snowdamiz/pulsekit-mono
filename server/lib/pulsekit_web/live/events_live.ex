@@ -165,28 +165,40 @@ defmodule PulsekitWeb.EventsLive do
     <Layouts.app flash={@flash} current_path={@current_path} current_organization={@current_organization} organizations={@organizations}>
       <div class="space-y-6">
         <%!-- Header --%>
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between">
           <div>
-            <h1 class="text-2xl font-bold">Events</h1>
+            <h1 class="text-2xl font-bold text-base-content tracking-tight">Events</h1>
             <p class="text-base-content/60 mt-1">View and filter all captured events</p>
           </div>
 
           <%= if length(@projects) > 0 do %>
             <div class="dropdown dropdown-end">
-              <div tabindex="0" role="button" class="btn btn-outline gap-2">
-                <.icon name="hero-folder" class="w-4 h-4" />
-                {if @selected_project, do: @selected_project.name, else: "Select Project"}
-                <.icon name="hero-chevron-down" class="w-4 h-4" />
+              <div
+                tabindex="0"
+                role="button"
+                class="flex items-center gap-2 px-4 py-2 rounded-lg border border-base-300 bg-base-100 hover:bg-base-200 transition-colors duration-150 cursor-pointer"
+              >
+                <.icon name="hero-folder" class="w-4 h-4 text-primary" />
+                <span class="font-medium text-sm">{if @selected_project, do: @selected_project.name, else: "Select Project"}</span>
+                <.icon name="hero-chevron-down" class="w-4 h-4 text-base-content/50" />
               </div>
-              <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+              <ul tabindex="0" class="dropdown-content z-[1] mt-2 p-1.5 w-56 bg-base-100 rounded-lg border border-base-300 shadow-lg">
                 <%= for project <- @projects do %>
                   <li>
                     <button
                       phx-click="select_project"
                       phx-value-id={project.id}
-                      class={[if(@selected_project && @selected_project.id == project.id, do: "active")]}
+                      class={[
+                        "flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-left transition-colors duration-100",
+                        if(@selected_project && @selected_project.id == project.id,
+                          do: "bg-primary/10 text-primary font-medium",
+                          else: "text-base-content hover:bg-base-200"
+                        )
+                      ]}
                     >
-                      {project.name}
+                      <.icon name="hero-folder" class="w-4 h-4" />
+                      <span class="truncate">{project.name}</span>
+                      <.icon :if={@selected_project && @selected_project.id == project.id} name="hero-check" class="w-4 h-4 ml-auto" />
                     </button>
                   </li>
                 <% end %>
@@ -197,93 +209,107 @@ defmodule PulsekitWeb.EventsLive do
 
         <%= if @selected_project do %>
           <%!-- Filters --%>
-          <div class="card bg-base-100 border border-base-300">
-            <div class="card-body py-4">
-              <div class="flex flex-wrap items-center gap-4">
-                <%!-- Search --%>
-                <div class="flex-1 min-w-[200px]">
-                  <form phx-change="search" phx-submit="search">
-                    <div class="relative">
-                      <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/50" />
-                      <input
-                        type="text"
-                        name="search"
-                        value={@search}
-                        placeholder="Search events..."
-                        class="input input-bordered w-full pl-10"
-                        phx-debounce="300"
-                      />
-                    </div>
-                  </form>
-                </div>
-
-                <%!-- Level Filter --%>
-                <select
-                  name="level"
-                  class="select select-bordered"
-                  phx-change="filter_level"
-                >
-                  <option value="">All Levels</option>
-                  <%= for level <- Event.levels() do %>
-                    <option value={level} selected={@level_filter == level}>
-                      {String.capitalize(level)}
-                    </option>
-                  <% end %>
-                </select>
-
-                <%!-- Clear Filters --%>
-                <%= if @level_filter || @type_filter || @search != "" do %>
-                  <button phx-click="clear_filters" class="btn btn-ghost btn-sm">
-                    <.icon name="hero-x-mark" class="w-4 h-4" />
-                    Clear
-                  </button>
-                <% end %>
+          <div class="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+            <div class="flex flex-wrap items-center gap-3">
+              <%!-- Search --%>
+              <div class="flex-1 min-w-[240px]">
+                <form phx-change="search" phx-submit="search">
+                  <div class="relative">
+                    <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
+                    <input
+                      type="text"
+                      name="search"
+                      value={@search}
+                      placeholder="Search events by type or message..."
+                      class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-base-300 bg-base-100 text-sm placeholder:text-base-content/40 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150"
+                      phx-debounce="300"
+                    />
+                  </div>
+                </form>
               </div>
+
+              <%!-- Level Filter --%>
+              <select
+                name="level"
+                class="px-4 py-2.5 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer"
+                phx-change="filter_level"
+              >
+                <option value="">All Levels</option>
+                <%= for level <- Event.levels() do %>
+                  <option value={level} selected={@level_filter == level}>
+                    {String.capitalize(level)}
+                  </option>
+                <% end %>
+              </select>
+
+              <%!-- Active Filters Indicator / Clear --%>
+              <%= if @level_filter || @type_filter || @search != "" do %>
+                <button
+                  phx-click="clear_filters"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors duration-150"
+                >
+                  <.icon name="hero-x-mark" class="w-4 h-4" />
+                  Clear filters
+                </button>
+              <% end %>
             </div>
           </div>
 
-          <%!-- Events List --%>
-          <div class="card bg-base-100 border border-base-300">
+          <%!-- Events Table --%>
+          <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
-              <table class="table">
+              <table class="w-full">
                 <thead>
-                  <tr>
-                    <th class="w-24">Level</th>
-                    <th>Type</th>
-                    <th>Message</th>
-                    <th class="w-32">Environment</th>
-                    <th class="w-40">Time</th>
+                  <tr class="border-b border-base-200 bg-base-200/30">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-24">Level</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Type</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Message</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-28">Environment</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-40">Time</th>
+                    <th class="w-10"></th>
                   </tr>
                 </thead>
-                <tbody id="events" phx-update="stream">
+                <tbody id="events" phx-update="stream" class="divide-y divide-base-200">
                   <tr class="hidden only:table-row">
-                    <td colspan="5" class="text-center py-12 text-base-content/60">
-                      <.icon name="hero-inbox" class="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>No events found</p>
+                    <td colspan="6" class="text-center py-16">
+                      <div class="flex flex-col items-center">
+                        <div class="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center mb-4">
+                          <.icon name="hero-inbox" class="w-7 h-7 text-base-content/30" />
+                        </div>
+                        <p class="text-base-content/60 text-sm">No events found</p>
+                        <p class="text-base-content/40 text-xs mt-1">Try adjusting your filters</p>
+                      </div>
                     </td>
                   </tr>
                   <tr
                     :for={{id, event} <- @streams.events}
                     id={id}
-                    class="hover:bg-base-200 cursor-pointer"
+                    class="hover:bg-base-200/50 cursor-pointer transition-colors duration-100"
                     onclick={"window.location.href='/events/#{event.id}'"}
                   >
-                    <td>
+                    <td class="px-4 py-3.5">
                       <.level_badge level={event.level} />
                     </td>
-                    <td class="font-medium">{event.type}</td>
-                    <td class="max-w-md truncate text-base-content/70">
-                      {event.message || "-"}
+                    <td class="px-4 py-3.5">
+                      <span class="font-medium text-sm text-base-content">{event.type}</span>
                     </td>
-                    <td>
+                    <td class="px-4 py-3.5 max-w-md">
+                      <span class="text-sm text-base-content/70 truncate block">{event.message || "-"}</span>
+                    </td>
+                    <td class="px-4 py-3.5">
                       <%= if event.environment do %>
-                        <span class="badge badge-ghost badge-sm">{event.environment}</span>
+                        <span class="inline-flex px-2 py-0.5 rounded-md bg-base-200 text-xs font-medium text-base-content/70">
+                          {event.environment}
+                        </span>
                       <% else %>
-                        <span class="text-base-content/40">-</span>
+                        <span class="text-base-content/30 text-sm">-</span>
                       <% end %>
                     </td>
-                    <td class="text-sm text-base-content/60">
-                      {format_datetime(event.timestamp)}
+                    <td class="px-4 py-3.5">
+                      <span class="text-sm text-base-content/50">{format_datetime(event.timestamp)}</span>
+                    </td>
+                    <td class="px-4 py-3.5">
+                      <.icon name="hero-chevron-right" class="w-4 h-4 text-base-content/30" />
                     </td>
                   </tr>
                 </tbody>
@@ -291,14 +317,23 @@ defmodule PulsekitWeb.EventsLive do
             </div>
           </div>
         <% else %>
-          <div class="card bg-base-100 border border-base-300">
-            <div class="card-body items-center text-center py-16">
-              <.icon name="hero-folder-plus" class="w-16 h-16 text-base-content/30" />
-              <h2 class="card-title mt-4">No projects yet</h2>
-              <p class="text-base-content/60">Create a project to start viewing events.</p>
-              <div class="card-actions mt-4">
-                <a href="/projects/new" class="btn btn-primary">Create Project</a>
+          <%!-- No Projects State --%>
+          <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm">
+            <div class="flex flex-col items-center text-center py-20 px-6">
+              <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <.icon name="hero-folder-plus" class="w-10 h-10 text-primary" />
               </div>
+              <h2 class="text-xl font-semibold text-base-content">No projects yet</h2>
+              <p class="text-base-content/60 max-w-md mt-2">
+                Create a project to start viewing events.
+              </p>
+              <a
+                href="/projects/new"
+                class="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-lg bg-primary text-primary-content font-medium text-sm hover:brightness-110 transition-all duration-150 shadow-sm hover:shadow-md"
+              >
+                <.icon name="hero-plus" class="w-4 h-4" />
+                Create Project
+              </a>
             </div>
           </div>
         <% end %>
@@ -310,19 +345,20 @@ defmodule PulsekitWeb.EventsLive do
   attr :level, :string, required: true
 
   defp level_badge(assigns) do
-    color = case assigns.level do
-      "fatal" -> "bg-error text-error-content"
-      "error" -> "bg-error text-error-content"
-      "warning" -> "bg-warning text-warning-content"
-      "info" -> "bg-info text-info-content"
-      "debug" -> "bg-base-300 text-base-content"
-      _ -> "bg-base-300 text-base-content"
+    {bg_class, text_class} = case assigns.level do
+      "fatal" -> {"bg-error/15", "text-error"}
+      "error" -> {"bg-error/15", "text-error"}
+      "warning" -> {"bg-warning/15", "text-warning"}
+      "info" -> {"bg-info/15", "text-info"}
+      "debug" -> {"bg-base-200", "text-base-content/70"}
+      _ -> {"bg-base-200", "text-base-content/70"}
     end
 
-    assigns = assign(assigns, :color, color)
+    assigns = assign(assigns, :bg_class, bg_class)
+    assigns = assign(assigns, :text_class, text_class)
 
     ~H"""
-    <span class={"px-2 py-1 rounded text-xs font-medium uppercase #{@color}"}>
+    <span class={["inline-flex px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wide", @bg_class, @text_class]}>
       {@level}
     </span>
     """

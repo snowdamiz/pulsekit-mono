@@ -122,106 +122,114 @@ defmodule PulsekitWeb.ProjectDetailLive do
     <Layouts.app flash={@flash} current_path={@current_path} current_organization={@current_organization} organizations={@organizations}>
       <div class="space-y-6">
         <%!-- Breadcrumb --%>
-        <div class="flex items-center gap-2 text-sm">
-          <a href="/projects" class="text-base-content/60 hover:text-base-content">Projects</a>
-          <.icon name="hero-chevron-right" class="w-4 h-4 text-base-content/40" />
-          <span class="font-medium">{@project.name}</span>
-        </div>
+        <nav class="flex items-center gap-2 text-sm">
+          <a href="/projects" class="text-base-content/50 hover:text-primary transition-colors duration-150">Projects</a>
+          <.icon name="hero-chevron-right" class="w-4 h-4 text-base-content/30" />
+          <span class="font-medium text-base-content">{@project.name}</span>
+        </nav>
 
         <%!-- Header --%>
-        <div class="flex items-start justify-between">
+        <div class="flex items-start justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-bold">{@project.name}</h1>
-            <p class="text-base-content/60 mt-1 font-mono">{@project.slug}</p>
+            <h1 class="text-2xl font-bold text-base-content tracking-tight">{@project.name}</h1>
+            <p class="text-base-content/50 mt-1 font-mono text-sm">{@project.slug}</p>
           </div>
-          <div class="flex gap-2">
-            <a href={"/projects/#{@project.id}/edit"} class="btn btn-outline">
-              <.icon name="hero-pencil" class="w-4 h-4" />
-              Edit
-            </a>
-          </div>
+          <a
+            href={"/projects/#{@project.id}/edit"}
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-base-300 bg-base-100 text-sm font-medium text-base-content hover:bg-base-200 transition-colors duration-150"
+          >
+            <.icon name="hero-pencil" class="w-4 h-4" />
+            Edit
+          </a>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <%!-- Main Content --%>
           <div class="lg:col-span-2 space-y-6">
             <%!-- API Keys --%>
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body">
-                <div class="flex items-center justify-between mb-4">
-                  <h2 class="card-title text-lg">
-                    <.icon name="hero-key" class="w-5 h-5" />
-                    API Keys
-                  </h2>
-                  <button phx-click="show_key_modal" class="btn btn-primary btn-sm">
-                    <.icon name="hero-plus" class="w-4 h-4" />
-                    New Key
-                  </button>
+            <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-base-200 bg-base-200/30">
+                <div class="flex items-center gap-2">
+                  <div class="p-1.5 rounded-lg bg-primary/10">
+                    <.icon name="hero-key" class="w-4 h-4 text-primary" />
+                  </div>
+                  <h2 class="font-semibold text-base-content">API Keys</h2>
                 </div>
-
-                <%= if length(@api_keys) == 0 do %>
-                  <div class="text-center py-8 text-base-content/60">
-                    <.icon name="hero-key" class="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No API keys yet</p>
-                    <p class="text-sm mt-1">Create an API key to start sending events</p>
-                  </div>
-                <% else %>
-                  <div class="overflow-x-auto">
-                    <table class="table">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Key Prefix</th>
-                          <th>Permissions</th>
-                          <th>Last Used</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <%= for key <- @api_keys do %>
-                          <tr>
-                            <td class="font-medium">{key.name}</td>
-                            <td class="font-mono text-sm">{key.key_prefix}...</td>
-                            <td>
-                              <span class="badge badge-ghost">{key.permissions}</span>
-                            </td>
-                            <td class="text-sm text-base-content/60">
-                              {format_last_used(key.last_used_at)}
-                            </td>
-                            <td>
-                              <button
-                                phx-click="delete_api_key"
-                                phx-value-id={key.id}
-                                data-confirm="Are you sure you want to delete this API key?"
-                                class="btn btn-ghost btn-sm text-error"
-                              >
-                                <.icon name="hero-trash" class="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        <% end %>
-                      </tbody>
-                    </table>
-                  </div>
-                <% end %>
+                <button
+                  phx-click="show_key_modal"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-content text-sm font-medium hover:brightness-110 transition-all duration-150"
+                >
+                  <.icon name="hero-plus" class="w-4 h-4" />
+                  New Key
+                </button>
               </div>
+
+              <%= if length(@api_keys) == 0 do %>
+                <div class="flex flex-col items-center text-center py-12 px-6">
+                  <div class="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center mb-4">
+                    <.icon name="hero-key" class="w-7 h-7 text-base-content/30" />
+                  </div>
+                  <p class="text-base-content/60 text-sm">No API keys yet</p>
+                  <p class="text-base-content/40 text-xs mt-1">Create an API key to start sending events</p>
+                </div>
+              <% else %>
+                <div class="overflow-x-auto">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="border-b border-base-200">
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Key Prefix</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Permissions</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Last Used</th>
+                        <th class="w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-base-200">
+                      <%= for key <- @api_keys do %>
+                        <tr class="hover:bg-base-200/50 transition-colors duration-100">
+                          <td class="px-4 py-3.5 font-medium text-sm text-base-content">{key.name}</td>
+                          <td class="px-4 py-3.5 font-mono text-sm text-base-content/70">{key.key_prefix}...</td>
+                          <td class="px-4 py-3.5">
+                            <span class="inline-flex px-2 py-0.5 rounded-md bg-base-200 text-xs font-medium text-base-content/70">
+                              {key.permissions}
+                            </span>
+                          </td>
+                          <td class="px-4 py-3.5 text-sm text-base-content/50">
+                            {format_last_used(key.last_used_at)}
+                          </td>
+                          <td class="px-4 py-3.5">
+                            <button
+                              phx-click="delete_api_key"
+                              phx-value-id={key.id}
+                              data-confirm="Are you sure you want to delete this API key?"
+                              class="p-1.5 rounded-lg hover:bg-error/10 transition-colors duration-150"
+                            >
+                              <.icon name="hero-trash" class="w-4 h-4 text-error" />
+                            </button>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              <% end %>
             </div>
 
             <%!-- Quick Start --%>
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body">
-                <h2 class="card-title text-lg mb-4">
-                  <.icon name="hero-rocket-launch" class="w-5 h-5" />
-                  Quick Start
-                </h2>
-
-                <div class="space-y-4">
-                  <p class="text-base-content/70">
-                    Send your first event using curl:
-                  </p>
-
-                  <.curl_example endpoint={endpoint_url()} />
+            <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
+              <div class="flex items-center gap-2 px-5 py-4 border-b border-base-200 bg-base-200/30">
+                <div class="p-1.5 rounded-lg bg-success/10">
+                  <.icon name="hero-rocket-launch" class="w-4 h-4 text-success" />
                 </div>
+                <h2 class="font-semibold text-base-content">Quick Start</h2>
+              </div>
+
+              <div class="p-5 space-y-4">
+                <p class="text-sm text-base-content/70">
+                  Send your first event using curl:
+                </p>
+
+                <.curl_example endpoint={endpoint_url()} />
               </div>
             </div>
           </div>
@@ -229,34 +237,38 @@ defmodule PulsekitWeb.ProjectDetailLive do
           <%!-- Sidebar --%>
           <div class="space-y-6">
             <%!-- Stats --%>
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body">
-                <h2 class="card-title text-lg mb-4">Statistics</h2>
-                <dl class="space-y-4">
+            <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
+              <div class="px-5 py-4 border-b border-base-200 bg-base-200/30">
+                <h2 class="font-semibold text-base-content">Statistics</h2>
+              </div>
+              <div class="p-5">
+                <dl class="space-y-5">
                   <div>
-                    <dt class="text-sm text-base-content/60">Total Events</dt>
-                    <dd class="text-2xl font-bold mt-1">{format_number(@event_count)}</dd>
+                    <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wider">Total Events</dt>
+                    <dd class="text-3xl font-bold text-base-content mt-1">{format_number(@event_count)}</dd>
                   </div>
                   <div>
-                    <dt class="text-sm text-base-content/60">API Keys</dt>
-                    <dd class="text-2xl font-bold mt-1">{length(@api_keys)}</dd>
+                    <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wider">API Keys</dt>
+                    <dd class="text-3xl font-bold text-base-content mt-1">{length(@api_keys)}</dd>
                   </div>
                 </dl>
               </div>
             </div>
 
             <%!-- Project Info --%>
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body">
-                <h2 class="card-title text-lg mb-4">Project Info</h2>
+            <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
+              <div class="px-5 py-4 border-b border-base-200 bg-base-200/30">
+                <h2 class="font-semibold text-base-content">Project Info</h2>
+              </div>
+              <div class="p-5">
                 <dl class="space-y-4">
                   <div>
-                    <dt class="text-sm text-base-content/60">Project ID</dt>
-                    <dd class="font-mono text-sm mt-1 break-all">{@project.id}</dd>
+                    <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wider">Project ID</dt>
+                    <dd class="mt-1.5 font-mono text-sm text-base-content break-all bg-base-200/50 px-2 py-1.5 rounded-md">{@project.id}</dd>
                   </div>
                   <div>
-                    <dt class="text-sm text-base-content/60">Created</dt>
-                    <dd class="mt-1">{format_datetime(@project.inserted_at)}</dd>
+                    <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wider">Created</dt>
+                    <dd class="mt-1.5 text-sm text-base-content">{format_datetime(@project.inserted_at)}</dd>
                   </div>
                 </dl>
               </div>
@@ -267,140 +279,172 @@ defmodule PulsekitWeb.ProjectDetailLive do
 
       <%!-- Create API Key Modal --%>
       <%= if @show_key_modal do %>
-        <div class="modal modal-open">
-          <div class="modal-box">
-            <button phx-click="close_key_modal" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-              <.icon name="hero-x-mark" class="w-4 h-4" />
-            </button>
+        <div class="fixed inset-0 z-50 flex items-center justify-center">
+          <%!-- Backdrop --%>
+          <div
+            class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            phx-click="close_key_modal"
+          />
+
+          <%!-- Modal --%>
+          <div class="relative w-full max-w-md mx-4 rounded-xl border border-base-300 bg-base-100 shadow-xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-base-200">
+              <h3 class="text-lg font-semibold text-base-content">
+                {if @new_api_key, do: "API Key Created", else: "Create API Key"}
+              </h3>
+              <button
+                phx-click="close_key_modal"
+                class="p-1.5 rounded-lg hover:bg-base-200 transition-colors duration-150"
+              >
+                <.icon name="hero-x-mark" class="w-5 h-5 text-base-content/50" />
+              </button>
+            </div>
 
             <%= if @new_api_key do %>
-              <h3 class="font-bold text-lg mb-4">API Key Created</h3>
-              <div class="alert alert-warning mb-4">
-                <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
-                <span>Make sure to copy your API key now. You won't be able to see it again!</span>
-              </div>
+              <div class="p-6">
+                <div class="flex items-start gap-3 p-4 rounded-lg bg-warning/10 border border-warning/30 mb-5">
+                  <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                  <p class="text-sm text-warning">Make sure to copy your API key now. You won't be able to see it again!</p>
+                </div>
 
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text">Your API Key</span>
-                </label>
-                <div class="join w-full">
-                  <input
-                    type="text"
-                    value={@new_api_key}
-                    readonly
-                    class="input input-bordered join-item flex-1 font-mono text-sm"
-                    id="api-key-input"
-                  />
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-1.5">Your API Key</label>
+                  <div class="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={@new_api_key}
+                      readonly
+                      class="flex-1 px-3 py-2.5 rounded-lg border border-base-300 bg-base-200/50 font-mono text-sm text-base-content"
+                      id="api-key-input"
+                    />
+                    <button
+                      type="button"
+                      class="flex-shrink-0 p-2.5 rounded-lg border border-base-300 bg-base-100 hover:bg-base-200 transition-colors duration-150"
+                      onclick="navigator.clipboard.writeText(document.getElementById('api-key-input').value)"
+                    >
+                      <.icon name="hero-clipboard" class="w-4 h-4 text-base-content/70" />
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex justify-end mt-6 pt-4 border-t border-base-200">
                   <button
                     type="button"
-                    class="btn join-item"
-                    onclick="navigator.clipboard.writeText(document.getElementById('api-key-input').value)"
+                    phx-click="close_key_modal"
+                    class="px-4 py-2 rounded-lg bg-primary text-primary-content text-sm font-medium hover:brightness-110 transition-all duration-150"
                   >
-                    <.icon name="hero-clipboard" class="w-4 h-4" />
+                    Done
                   </button>
                 </div>
               </div>
-
-              <div class="modal-action">
-                <button type="button" phx-click="close_key_modal" class="btn btn-primary">
-                  Done
-                </button>
-              </div>
             <% else %>
-              <h3 class="font-bold text-lg mb-4">Create API Key</h3>
-
-              <.form for={@key_form} phx-submit="create_api_key" class="space-y-4" id="api-key-form">
-                <div class="form-control">
-                  <label class="label">
-                    <span class="label-text">Key Name</span>
-                  </label>
+              <.form for={@key_form} phx-submit="create_api_key" class="p-6 space-y-5" id="api-key-form">
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-1.5">Key Name</label>
                   <input
                     type="text"
                     name="name"
                     placeholder="Production Server"
-                    class="input input-bordered w-full"
+                    class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150"
                     required
                   />
                 </div>
 
-                <div class="form-control">
-                  <label class="label">
-                    <span class="label-text">Permissions</span>
-                  </label>
-                  <select name="permissions" class="select select-bordered w-full">
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-1.5">Permissions</label>
+                  <select
+                    name="permissions"
+                    class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer"
+                  >
                     <option value="write">Write (can send events)</option>
                     <option value="read">Read (can read events)</option>
                     <option value="admin">Admin (full access)</option>
                   </select>
                 </div>
 
-                <div class="modal-action">
-                  <button type="button" phx-click="close_key_modal" class="btn btn-ghost">
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                  <button
+                    type="button"
+                    phx-click="close_key_modal"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-base-content hover:bg-base-200 transition-colors duration-150"
+                  >
                     Cancel
                   </button>
-                  <button type="submit" class="btn btn-primary">
+                  <button
+                    type="submit"
+                    class="px-4 py-2 rounded-lg bg-primary text-primary-content text-sm font-medium hover:brightness-110 transition-all duration-150 shadow-sm"
+                  >
                     Create Key
                   </button>
                 </div>
               </.form>
             <% end %>
           </div>
-          <div class="modal-backdrop bg-base-300/50" phx-click="close_key_modal"></div>
         </div>
       <% end %>
 
       <%!-- Edit Project Modal --%>
       <%= if @show_edit_modal do %>
-        <div class="modal modal-open">
-          <div class="modal-box">
-            <button phx-click="close_edit_modal" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-              <.icon name="hero-x-mark" class="w-4 h-4" />
-            </button>
+        <div class="fixed inset-0 z-50 flex items-center justify-center">
+          <%!-- Backdrop --%>
+          <div
+            class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            phx-click="close_edit_modal"
+          />
 
-            <h3 class="font-bold text-lg mb-4">Edit Project</h3>
+          <%!-- Modal --%>
+          <div class="relative w-full max-w-md mx-4 rounded-xl border border-base-300 bg-base-100 shadow-xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-base-200">
+              <h3 class="text-lg font-semibold text-base-content">Edit Project</h3>
+              <button
+                phx-click="close_edit_modal"
+                class="p-1.5 rounded-lg hover:bg-base-200 transition-colors duration-150"
+              >
+                <.icon name="hero-x-mark" class="w-5 h-5 text-base-content/50" />
+              </button>
+            </div>
 
-            <.form for={@project_form} phx-submit="update_project" class="space-y-4" id="edit-project-form">
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text">Project Name</span>
-                </label>
+            <.form for={@project_form} phx-submit="update_project" class="p-6 space-y-5" id="edit-project-form">
+              <div>
+                <label class="block text-sm font-medium text-base-content mb-1.5">Project Name</label>
                 <.input
                   field={@project_form[:name]}
                   type="text"
-                  class="input input-bordered w-full"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150"
                   required
                 />
               </div>
 
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text">Slug</span>
-                </label>
+              <div>
+                <label class="block text-sm font-medium text-base-content mb-1.5">Slug</label>
                 <.input
                   field={@project_form[:slug]}
                   type="text"
-                  class="input input-bordered w-full font-mono"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content font-mono focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150"
                   required
                 />
-                <label class="label">
-                  <span class="label-text-alt text-base-content/60">
-                    URL-friendly identifier (lowercase, alphanumeric, dashes)
-                  </span>
-                </label>
+                <p class="mt-1 text-xs text-base-content/50">
+                  URL-friendly identifier (lowercase, alphanumeric, dashes)
+                </p>
               </div>
 
-              <div class="modal-action">
-                <button type="button" phx-click="close_edit_modal" class="btn btn-ghost">
+              <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  phx-click="close_edit_modal"
+                  class="px-4 py-2 rounded-lg text-sm font-medium text-base-content hover:bg-base-200 transition-colors duration-150"
+                >
                   Cancel
                 </button>
-                <button type="submit" class="btn btn-primary">
+                <button
+                  type="submit"
+                  class="px-4 py-2 rounded-lg bg-primary text-primary-content text-sm font-medium hover:brightness-110 transition-all duration-150 shadow-sm"
+                >
                   Save Changes
                 </button>
               </div>
             </.form>
           </div>
-          <div class="modal-backdrop bg-base-300/50" phx-click="close_edit_modal"></div>
         </div>
       <% end %>
     </Layouts.app>
@@ -444,8 +488,8 @@ defmodule PulsekitWeb.ProjectDetailLive do
     assigns = assign(assigns, :curl_cmd, curl_cmd)
 
     ~H"""
-    <div class="bg-base-200 rounded-lg p-4 overflow-x-auto">
-      <pre class="text-sm font-mono whitespace-pre-wrap">{@curl_cmd}</pre>
+    <div class="rounded-lg bg-base-200/50 border border-base-300 p-4 overflow-x-auto">
+      <pre class="text-sm font-mono text-base-content/80 whitespace-pre-wrap">{@curl_cmd}</pre>
     </div>
     """
   end

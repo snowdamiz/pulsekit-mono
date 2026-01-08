@@ -54,24 +54,38 @@ defmodule PulsekitWeb.CoreComponents do
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+      phx-mounted={JS.transition({"transition-all duration-200 ease-out", "translate-x-full opacity-0", "translate-x-0 opacity-100"})}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="fixed top-4 right-4 z-50"
       {@rest}
     >
       <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && "alert-info",
-        @kind == :error && "alert-error"
+        "flex items-start gap-3 w-80 sm:w-96 p-4 rounded-lg shadow-lg border",
+        "bg-base-100 backdrop-blur-sm",
+        @kind == :info && "border-primary/30",
+        @kind == :error && "border-error/30"
       ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
-        <div>
-          <p :if={@title} class="font-semibold">{@title}</p>
-          <p>{msg}</p>
+        <div class={[
+          "flex-shrink-0 p-1.5 rounded-full",
+          @kind == :info && "bg-primary/10 text-primary",
+          @kind == :error && "bg-error/10 text-error"
+        ]}>
+          <.icon :if={@kind == :info} name="hero-information-circle" class="size-5" />
+          <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5" />
         </div>
-        <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label="close">
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+        <div class="flex-1 min-w-0">
+          <p :if={@title} class="font-semibold text-base-content">{@title}</p>
+          <p class={[
+            "text-sm",
+            if(@title, do: "text-base-content/70 mt-0.5", else: "text-base-content")
+          ]}>{msg}</p>
+        </div>
+        <button
+          type="button"
+          class="flex-shrink-0 p-1 rounded-md text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors duration-150"
+          aria-label="close"
+        >
+          <.icon name="hero-x-mark" class="size-4" />
         </button>
       </div>
     </div>
@@ -89,15 +103,34 @@ defmodule PulsekitWeb.CoreComponents do
   """
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
   attr :class, :any
-  attr :variant, :string, values: ~w(primary)
+  attr :variant, :string, default: nil, doc: "button variant: primary, secondary, ghost, outline"
+  attr :size, :string, values: ~w(sm md lg), default: "md"
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    base_classes = "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+
+    size_classes = %{
+      "sm" => "px-3 py-1.5 text-sm",
+      "md" => "px-4 py-2 text-sm",
+      "lg" => "px-5 py-2.5 text-base"
+    }
+
+    variant_classes = %{
+      "primary" => "bg-primary text-primary-content hover:brightness-110 shadow-sm hover:shadow-md",
+      "secondary" => "bg-base-200 text-base-content hover:bg-base-300",
+      "ghost" => "text-base-content/70 hover:text-base-content hover:bg-base-200",
+      "outline" => "border border-base-300 text-base-content hover:bg-base-200 hover:border-base-400",
+      nil => "bg-primary/10 text-primary hover:bg-primary/20"
+    }
 
     assigns =
       assign_new(assigns, :class, fn ->
-        ["btn", Map.fetch!(variants, assigns[:variant])]
+        [
+          base_classes,
+          Map.fetch!(size_classes, assigns.size),
+          Map.fetch!(variant_classes, assigns[:variant])
+        ]
       end)
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
@@ -204,8 +237,8 @@ defmodule PulsekitWeb.CoreComponents do
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
+    <div class="mb-4">
+      <label class="flex items-center gap-3 cursor-pointer group">
         <input
           type="hidden"
           name={@name}
@@ -213,17 +246,29 @@ defmodule PulsekitWeb.CoreComponents do
           disabled={@rest[:disabled]}
           form={@rest[:form]}
         />
-        <span class="label">
+        <div class="relative">
           <input
             type="checkbox"
             id={@id}
             name={@name}
             value="true"
             checked={@checked}
-            class={@class || "checkbox checkbox-sm"}
+            class={@class || [
+              "peer sr-only"
+            ]}
             {@rest}
-          />{@label}
-        </span>
+          />
+          <div class={[
+            "w-5 h-5 rounded border-2 transition-all duration-150",
+            "border-base-300 bg-base-100",
+            "peer-checked:bg-primary peer-checked:border-primary",
+            "peer-focus:ring-2 peer-focus:ring-primary/20",
+            "group-hover:border-primary/50"
+          ]}>
+            <.icon name="hero-check" class="w-4 h-4 text-primary-content opacity-0 peer-checked:opacity-100 transition-opacity" />
+          </div>
+        </div>
+        <span class="text-sm font-medium text-base-content select-none">{@label}</span>
       </label>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
@@ -232,20 +277,27 @@ defmodule PulsekitWeb.CoreComponents do
 
   def input(%{type: "select"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <select
-          id={@id}
-          name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
-          multiple={@multiple}
-          {@rest}
-        >
-          <option :if={@prompt} value="">{@prompt}</option>
-          {Phoenix.HTML.Form.options_for_select(@options, @value)}
-        </select>
+    <div class="mb-4">
+      <label :if={@label} class="block text-sm font-medium text-base-content mb-1.5">
+        {@label}
       </label>
+      <select
+        id={@id}
+        name={@name}
+        class={[
+          @class || [
+            "w-full px-3 py-2 rounded-lg border bg-base-100 text-base-content",
+            "border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20",
+            "transition-all duration-150 outline-none appearance-none cursor-pointer"
+          ],
+          @errors != [] && (@error_class || "border-error focus:border-error focus:ring-error/20")
+        ]}
+        multiple={@multiple}
+        {@rest}
+      >
+        <option :if={@prompt} value="">{@prompt}</option>
+        {Phoenix.HTML.Form.options_for_select(@options, @value)}
+      </select>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -253,19 +305,24 @@ defmodule PulsekitWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <textarea
-          id={@id}
-          name={@name}
-          class={[
-            @class || "w-full textarea",
-            @errors != [] && (@error_class || "textarea-error")
-          ]}
-          {@rest}
-        >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
+    <div class="mb-4">
+      <label :if={@label} class="block text-sm font-medium text-base-content mb-1.5">
+        {@label}
       </label>
+      <textarea
+        id={@id}
+        name={@name}
+        class={[
+          @class || [
+            "w-full px-3 py-2 rounded-lg border bg-base-100 text-base-content",
+            "border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20",
+            "transition-all duration-150 outline-none resize-y min-h-[100px]",
+            "placeholder:text-base-content/40"
+          ],
+          @errors != [] && (@error_class || "border-error focus:border-error focus:ring-error/20")
+        ]}
+        {@rest}
+      >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -274,21 +331,26 @@ defmodule PulsekitWeb.CoreComponents do
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <input
-          type={@type}
-          name={@name}
-          id={@id}
-          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
-          ]}
-          {@rest}
-        />
+    <div class="mb-4">
+      <label :if={@label} class="block text-sm font-medium text-base-content mb-1.5">
+        {@label}
       </label>
+      <input
+        type={@type}
+        name={@name}
+        id={@id}
+        value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        class={[
+          @class || [
+            "w-full px-3 py-2 rounded-lg border bg-base-100 text-base-content",
+            "border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20",
+            "transition-all duration-150 outline-none",
+            "placeholder:text-base-content/40"
+          ],
+          @errors != [] && (@error_class || "border-error focus:border-error focus:ring-error/20")
+        ]}
+        {@rest}
+      />
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -297,9 +359,9 @@ defmodule PulsekitWeb.CoreComponents do
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
-      {render_slot(@inner_block)}
+    <p class="mt-1.5 flex gap-1.5 items-center text-sm text-error">
+      <.icon name="hero-exclamation-circle" class="size-4 flex-shrink-0" />
+      <span>{render_slot(@inner_block)}</span>
     </p>
     """
   end
@@ -313,16 +375,16 @@ defmodule PulsekitWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
+    <header class={[@actions != [] && "flex items-center justify-between gap-6", "mb-6"]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8">
+        <h1 class="text-2xl font-bold text-base-content tracking-tight">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="text-sm text-base-content/60 mt-1">
           {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none">{render_slot(@actions)}</div>
+      <div class="flex-none flex items-center gap-3">{render_slot(@actions)}</div>
     </header>
     """
   end
@@ -359,34 +421,41 @@ defmodule PulsekitWeb.CoreComponents do
       end
 
     ~H"""
-    <table class="table table-zebra">
-      <thead>
-        <tr>
-          <th :for={col <- @col}>{col[:label]}</th>
-          <th :if={@action != []}>
-            <span class="sr-only">Actions</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}>
-        <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
-          <td
-            :for={col <- @col}
-            phx-click={@row_click && @row_click.(row)}
-            class={@row_click && "hover:cursor-pointer"}
-          >
-            {render_slot(col, @row_item.(row))}
-          </td>
-          <td :if={@action != []} class="w-0 font-semibold">
-            <div class="flex gap-4">
-              <%= for action <- @action do %>
-                {render_slot(action, @row_item.(row))}
-              <% end %>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="overflow-hidden rounded-lg border border-base-300 bg-base-100">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-base-300 bg-base-200/50">
+            <th
+              :for={col <- @col}
+              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70"
+            >
+              {col[:label]}
+            </th>
+            <th :if={@action != []} class="px-4 py-3 text-right">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"} class="divide-y divide-base-200">
+          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="hover:bg-base-200/50 transition-colors duration-100">
+            <td
+              :for={col <- @col}
+              phx-click={@row_click && @row_click.(row)}
+              class={["px-4 py-3 text-sm text-base-content", @row_click && "cursor-pointer"]}
+            >
+              {render_slot(col, @row_item.(row))}
+            </td>
+            <td :if={@action != []} class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <%= for action <- @action do %>
+                  {render_slot(action, @row_item.(row))}
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     """
   end
 
@@ -406,14 +475,69 @@ defmodule PulsekitWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <ul class="list">
-      <li :for={item <- @item} class="list-row">
-        <div class="list-col-grow">
-          <div class="font-bold">{item.title}</div>
-          <div>{render_slot(item)}</div>
-        </div>
-      </li>
-    </ul>
+    <dl class="divide-y divide-base-200">
+      <div :for={item <- @item} class="py-3 flex items-center justify-between gap-4">
+        <dt class="text-sm font-medium text-base-content/70">{item.title}</dt>
+        <dd class="text-sm text-base-content">{render_slot(item)}</dd>
+      </div>
+    </dl>
+    """
+  end
+
+  @doc """
+  Renders a card component.
+  """
+  attr :class, :any, default: nil
+  attr :elevated, :boolean, default: false
+  slot :inner_block, required: true
+
+  def card(assigns) do
+    ~H"""
+    <div class={[
+      "rounded-lg border border-base-300 bg-base-100",
+      if(@elevated, do: "shadow-md hover:shadow-lg transition-shadow duration-150", else: "shadow-sm"),
+      @class
+    ]}>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a badge component.
+  """
+  attr :variant, :string, values: ~w(default primary error warning info success), default: "default"
+  attr :size, :string, values: ~w(sm md), default: "md"
+  attr :class, :any, default: nil
+  slot :inner_block, required: true
+
+  def badge(assigns) do
+    variant_classes = %{
+      "default" => "bg-base-200 text-base-content border-base-300",
+      "primary" => "bg-primary/10 text-primary border-primary/30",
+      "error" => "bg-error/10 text-error border-error/30",
+      "warning" => "bg-warning/10 text-warning border-warning/30",
+      "info" => "bg-info/10 text-info border-info/30",
+      "success" => "bg-success/10 text-success border-success/30"
+    }
+
+    size_classes = %{
+      "sm" => "px-1.5 py-0.5 text-xs",
+      "md" => "px-2 py-1 text-xs"
+    }
+
+    assigns = assign(assigns, :variant_class, Map.fetch!(variant_classes, assigns.variant))
+    assigns = assign(assigns, :size_class, Map.fetch!(size_classes, assigns.size))
+
+    ~H"""
+    <span class={[
+      "inline-flex items-center font-medium rounded border",
+      @variant_class,
+      @size_class,
+      @class
+    ]}>
+      {render_slot(@inner_block)}
+    </span>
     """
   end
 
@@ -449,21 +573,21 @@ defmodule PulsekitWeb.CoreComponents do
   def show(js \\ %JS{}, selector) do
     JS.show(js,
       to: selector,
-      time: 300,
+      time: 200,
       transition:
-        {"transition-all ease-out duration-300",
-         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95",
-         "opacity-100 translate-y-0 sm:scale-100"}
+        {"transition-all ease-out duration-200",
+         "opacity-0 translate-y-2 scale-95",
+         "opacity-100 translate-y-0 scale-100"}
     )
   end
 
   def hide(js \\ %JS{}, selector) do
     JS.hide(js,
       to: selector,
-      time: 200,
+      time: 150,
       transition:
-        {"transition-all ease-in duration-200", "opacity-100 translate-y-0 sm:scale-100",
-         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
+        {"transition-all ease-in duration-150", "opacity-100 translate-y-0 scale-100",
+         "opacity-0 translate-y-2 scale-95"}
     )
   end
 

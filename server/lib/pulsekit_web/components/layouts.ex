@@ -42,86 +42,107 @@ defmodule PulsekitWeb.Layouts do
     ~H"""
     <div class="min-h-screen bg-base-200">
       <%!-- Sidebar --%>
-      <aside class="fixed left-0 top-0 h-full w-64 bg-base-100 border-r border-base-300 z-40">
-        <div class="flex flex-col h-full">
-          <%!-- Logo --%>
-          <div class="p-4 border-b border-base-300">
-            <a href="/" class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <.icon name="hero-bolt" class="w-6 h-6 text-primary-content" />
-              </div>
-              <span class="text-xl font-bold tracking-tight">PulseKit</span>
-            </a>
-          </div>
+      <aside class="fixed left-0 top-0 h-full w-64 bg-base-100 border-r border-base-300 z-40 flex flex-col">
+        <%!-- Logo --%>
+        <div class="p-5 border-b border-base-200">
+          <a href="/" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow duration-150">
+              <.icon name="hero-bolt-solid" class="w-5 h-5 text-primary-content" />
+            </div>
+            <div>
+              <span class="text-lg font-bold tracking-tight text-base-content">PulseKit</span>
+              <span class="block text-[10px] uppercase tracking-widest text-base-content/40 font-medium -mt-0.5">Observability</span>
+            </div>
+          </a>
+        </div>
 
-          <%!-- Organization Selector --%>
-          <%= if length(@organizations) > 0 do %>
-            <div class="p-3 border-b border-base-300">
-              <div class="dropdown w-full">
-                <div tabindex="0" role="button" class="btn btn-ghost btn-sm w-full justify-between gap-2 font-normal">
-                  <div class="flex items-center gap-2 truncate">
-                    <.icon name="hero-building-office-2" class="w-4 h-4 shrink-0 text-primary" />
-                    <span class="truncate">{if @current_organization, do: @current_organization.name, else: "Select Workspace"}</span>
-                  </div>
-                  <.icon name="hero-chevron-up-down" class="w-4 h-4 shrink-0 opacity-50" />
+        <%!-- Organization Selector --%>
+        <%= if length(@organizations) > 0 do %>
+          <div class="px-3 py-3 border-b border-base-200">
+            <div class="dropdown w-full">
+              <div
+                tabindex="0"
+                role="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm bg-base-200/50 hover:bg-base-200 border border-transparent hover:border-base-300 transition-all duration-150 cursor-pointer"
+              >
+                <div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <.icon name="hero-building-office-2" class="w-4 h-4 text-primary" />
                 </div>
-                <ul tabindex="0" class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-box w-full border border-base-300 mt-1">
-                  <%= for org <- @organizations do %>
-                    <li>
-                      <a
-                        href={"/?org=#{org.id}"}
-                        class={[if(@current_organization && @current_organization.id == org.id, do: "active")]}
-                      >
-                        <.icon name="hero-building-office-2" class="w-4 h-4" />
-                        {org.name}
-                      </a>
-                    </li>
-                  <% end %>
-                  <li class="border-t border-base-300 mt-1 pt-1">
-                    <a href="/organizations">
-                      <.icon name="hero-cog-6-tooth" class="w-4 h-4" />
-                      Manage Workspaces
+                <div class="flex-1 min-w-0 text-left">
+                  <span class="block truncate font-medium text-base-content">
+                    {if @current_organization, do: @current_organization.name, else: "Select Workspace"}
+                  </span>
+                </div>
+                <.icon name="hero-chevron-up-down" class="w-4 h-4 flex-shrink-0 text-base-content/40" />
+              </div>
+              <ul tabindex="0" class="dropdown-content z-[100] mt-2 p-1.5 w-full bg-base-100 rounded-lg border border-base-300 shadow-lg">
+                <%= for org <- @organizations do %>
+                  <li>
+                    <a
+                      href={"/?org=#{org.id}"}
+                      class={[
+                        "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-100",
+                        if(@current_organization && @current_organization.id == org.id,
+                          do: "bg-primary/10 text-primary font-medium",
+                          else: "text-base-content hover:bg-base-200"
+                        )
+                      ]}
+                    >
+                      <.icon name="hero-building-office-2" class="w-4 h-4" />
+                      <span class="truncate">{org.name}</span>
+                      <.icon :if={@current_organization && @current_organization.id == org.id} name="hero-check" class="w-4 h-4 ml-auto" />
                     </a>
                   </li>
-                </ul>
-              </div>
+                <% end %>
+                <li class="border-t border-base-200 mt-1.5 pt-1.5">
+                  <a
+                    href="/organizations"
+                    class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors duration-100"
+                  >
+                    <.icon name="hero-cog-6-tooth" class="w-4 h-4" />
+                    <span>Manage Workspaces</span>
+                  </a>
+                </li>
+              </ul>
             </div>
-          <% end %>
+          </div>
+        <% end %>
 
-          <%!-- Navigation --%>
-          <nav class="flex-1 p-4 space-y-1">
-            <.nav_link href="/" icon="hero-chart-bar" current_path={@current_path}>
-              Dashboard
-            </.nav_link>
-            <.nav_link href="/events" icon="hero-exclamation-triangle" current_path={@current_path}>
-              Events
-            </.nav_link>
-            <.nav_link href="/projects" icon="hero-folder" current_path={@current_path}>
-              Projects
-            </.nav_link>
-            <.nav_link href="/alerts" icon="hero-bell" current_path={@current_path}>
-              Alerts
-            </.nav_link>
-          </nav>
+        <%!-- Navigation --%>
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <p class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-base-content/40">Main</p>
+          <.nav_link href="/" icon="hero-chart-bar" current_path={@current_path}>
+            Dashboard
+          </.nav_link>
+          <.nav_link href="/events" icon="hero-exclamation-triangle" current_path={@current_path}>
+            Events
+          </.nav_link>
+          <.nav_link href="/projects" icon="hero-folder" current_path={@current_path}>
+            Projects
+          </.nav_link>
+          <.nav_link href="/alerts" icon="hero-bell" current_path={@current_path}>
+            Alerts
+          </.nav_link>
+        </nav>
 
-          <%!-- Bottom section --%>
-          <div class="p-4 border-t border-base-300 space-y-2">
-            <.nav_link href="/organizations" icon="hero-building-office-2" current_path={@current_path}>
-              Workspaces
-            </.nav_link>
-            <.nav_link href="/settings" icon="hero-cog-6-tooth" current_path={@current_path}>
-              Settings
-            </.nav_link>
-            <div class="pt-2">
-              <.theme_toggle />
-            </div>
+        <%!-- Bottom section --%>
+        <div class="px-3 py-4 border-t border-base-200 space-y-1">
+          <p class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-base-content/40">Settings</p>
+          <.nav_link href="/organizations" icon="hero-building-office-2" current_path={@current_path}>
+            Workspaces
+          </.nav_link>
+          <.nav_link href="/settings" icon="hero-cog-6-tooth" current_path={@current_path}>
+            Settings
+          </.nav_link>
+          <div class="pt-3 px-1">
+            <.theme_toggle />
           </div>
         </div>
       </aside>
 
       <%!-- Main content --%>
       <main class="ml-64 min-h-screen">
-        <div class="p-6">
+        <div class="p-8 max-w-7xl mx-auto">
           {render_slot(@inner_block)}
         </div>
       </main>
@@ -146,15 +167,19 @@ defmodule PulsekitWeb.Layouts do
     <a
       href={@href}
       class={[
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+        "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
         if(@active,
           do: "bg-primary text-primary-content shadow-sm",
           else: "text-base-content/70 hover:bg-base-200 hover:text-base-content"
         )
       ]}
     >
-      <.icon name={@icon} class="w-5 h-5" />
-      {render_slot(@inner_block)}
+      <span class={[
+        "absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full transition-all duration-150",
+        if(@active, do: "bg-primary-content/30", else: "bg-transparent group-hover:bg-primary/30")
+      ]} />
+      <.icon name={@icon} class={["w-5 h-5 transition-colors duration-150", if(@active, do: "", else: "text-base-content/50 group-hover:text-base-content/70")]} />
+      <span>{render_slot(@inner_block)}</span>
     </a>
     """
   end
@@ -209,31 +234,38 @@ defmodule PulsekitWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
+    <div class="relative flex items-center p-1 rounded-lg bg-base-200 border border-base-300">
+      <%!-- Sliding indicator --%>
+      <div class={[
+        "absolute h-7 w-1/3 rounded-md bg-base-100 shadow-sm border border-base-300 transition-all duration-200 ease-out",
+        "left-1 [[data-theme=light]_&]:left-[calc(33.33%+2px)] [[data-theme=dark]_&]:left-[calc(66.66%+3px)]"
+      ]} />
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative z-10 flex items-center justify-center w-1/3 h-7 rounded-md cursor-pointer transition-colors duration-150"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
+        title="System theme"
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-computer-desktop-micro" class="size-4 text-base-content/60 hover:text-base-content transition-colors" />
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative z-10 flex items-center justify-center w-1/3 h-7 rounded-md cursor-pointer transition-colors duration-150"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
+        title="Light theme"
       >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-sun-micro" class="size-4 text-base-content/60 hover:text-primary transition-colors" />
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative z-10 flex items-center justify-center w-1/3 h-7 rounded-md cursor-pointer transition-colors duration-150"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
+        title="Dark theme"
       >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-moon-micro" class="size-4 text-base-content/60 hover:text-base-content transition-colors" />
       </button>
     </div>
     """

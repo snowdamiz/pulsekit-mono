@@ -190,29 +190,41 @@ defmodule PulsekitWeb.AlertsLive do
     <Layouts.app flash={@flash} current_path={@current_path} current_organization={@current_organization} organizations={@organizations}>
       <div class="space-y-6">
         <%!-- Header --%>
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between">
           <div>
-            <h1 class="text-2xl font-bold">Alerts</h1>
+            <h1 class="text-2xl font-bold text-base-content tracking-tight">Alerts</h1>
             <p class="text-base-content/60 mt-1">Configure webhook alerts for your events</p>
           </div>
 
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
             <%= if length(@projects) > 0 do %>
               <div class="dropdown dropdown-end">
-                <div tabindex="0" role="button" class="btn btn-outline gap-2">
-                  <.icon name="hero-folder" class="w-4 h-4" />
-                  {if @selected_project, do: @selected_project.name, else: "Select Project"}
-                  <.icon name="hero-chevron-down" class="w-4 h-4" />
+                <div
+                  tabindex="0"
+                  role="button"
+                  class="flex items-center gap-2 px-4 py-2 rounded-lg border border-base-300 bg-base-100 hover:bg-base-200 transition-colors duration-150 cursor-pointer"
+                >
+                  <.icon name="hero-folder" class="w-4 h-4 text-primary" />
+                  <span class="font-medium text-sm">{if @selected_project, do: @selected_project.name, else: "Select Project"}</span>
+                  <.icon name="hero-chevron-down" class="w-4 h-4 text-base-content/50" />
                 </div>
-                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                <ul tabindex="0" class="dropdown-content z-[1] mt-2 p-1.5 w-56 bg-base-100 rounded-lg border border-base-300 shadow-lg">
                   <%= for project <- @projects do %>
                     <li>
                       <button
                         phx-click="select_project"
                         phx-value-id={project.id}
-                        class={[if(@selected_project && @selected_project.id == project.id, do: "active")]}
+                        class={[
+                          "flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-left transition-colors duration-100",
+                          if(@selected_project && @selected_project.id == project.id,
+                            do: "bg-primary/10 text-primary font-medium",
+                            else: "text-base-content hover:bg-base-200"
+                          )
+                        ]}
                       >
-                        {project.name}
+                        <.icon name="hero-folder" class="w-4 h-4" />
+                        <span class="truncate">{project.name}</span>
+                        <.icon :if={@selected_project && @selected_project.id == project.id} name="hero-check" class="w-4 h-4 ml-auto" />
                       </button>
                     </li>
                   <% end %>
@@ -221,7 +233,10 @@ defmodule PulsekitWeb.AlertsLive do
             <% end %>
 
             <%= if @selected_project do %>
-              <a href="/alerts/new" class="btn btn-primary">
+              <a
+                href="/alerts/new"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-content font-medium text-sm hover:brightness-110 transition-all duration-150 shadow-sm hover:shadow-md"
+              >
                 <.icon name="hero-plus" class="w-4 h-4" />
                 New Alert
               </a>
@@ -232,70 +247,80 @@ defmodule PulsekitWeb.AlertsLive do
         <%= if @selected_project do %>
           <%!-- Alert Rules --%>
           <%= if length(@alert_rules) == 0 do %>
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body items-center text-center py-16">
-                <.icon name="hero-bell-slash" class="w-16 h-16 text-base-content/30" />
-                <h2 class="card-title mt-4">No alert rules yet</h2>
-                <p class="text-base-content/60 max-w-md">
+            <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm">
+              <div class="flex flex-col items-center text-center py-20 px-6">
+                <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                  <.icon name="hero-bell-slash" class="w-10 h-10 text-primary" />
+                </div>
+                <h2 class="text-xl font-semibold text-base-content">No alert rules yet</h2>
+                <p class="text-base-content/60 max-w-md mt-2">
                   Create alert rules to get notified via webhooks when specific events occur.
                 </p>
-                <div class="card-actions mt-4">
-                  <a href="/alerts/new" class="btn btn-primary">
-                    <.icon name="hero-plus" class="w-4 h-4" />
-                    Create Alert Rule
-                  </a>
-                </div>
+                <a
+                  href="/alerts/new"
+                  class="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-lg bg-primary text-primary-content font-medium text-sm hover:brightness-110 transition-all duration-150 shadow-sm hover:shadow-md"
+                >
+                  <.icon name="hero-plus" class="w-4 h-4" />
+                  Create Alert Rule
+                </a>
               </div>
             </div>
           <% else %>
             <div class="space-y-4">
               <%= for rule <- @alert_rules do %>
-                <div class="card bg-base-100 border border-base-300">
-                  <div class="card-body">
-                    <div class="flex items-start justify-between">
-                      <div class="flex items-center gap-4">
+                <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-150 overflow-hidden">
+                  <div class="p-5">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="flex items-start gap-4">
+                        <%!-- Status Indicator --%>
                         <div class={[
-                          "w-3 h-3 rounded-full",
-                          if(rule.enabled, do: "bg-success", else: "bg-base-300")
+                          "w-3 h-3 rounded-full mt-1.5 flex-shrink-0",
+                          if(rule.enabled, do: "bg-primary shadow-sm shadow-primary/50", else: "bg-base-300")
                         ]} />
                         <div>
-                          <h3 class="font-bold">{rule.name}</h3>
+                          <h3 class="font-semibold text-base-content">{rule.name}</h3>
                           <p class="text-sm text-base-content/60 mt-1">
                             {format_condition(rule)}
                           </p>
                         </div>
                       </div>
 
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-1">
                         <button
                           phx-click="toggle_alert"
                           phx-value-id={rule.id}
-                          class="btn btn-ghost btn-sm"
+                          class="p-2 rounded-lg hover:bg-base-200 transition-colors duration-150"
+                          title={if rule.enabled, do: "Disable", else: "Enable"}
                         >
                           <%= if rule.enabled do %>
-                            <.icon name="hero-pause" class="w-4 h-4" />
+                            <.icon name="hero-pause" class="w-4 h-4 text-base-content/70" />
                           <% else %>
-                            <.icon name="hero-play" class="w-4 h-4" />
+                            <.icon name="hero-play" class="w-4 h-4 text-base-content/70" />
                           <% end %>
                         </button>
-                        <a href={"/alerts/#{rule.id}/edit"} class="btn btn-ghost btn-sm">
-                          <.icon name="hero-pencil" class="w-4 h-4" />
+                        <a
+                          href={"/alerts/#{rule.id}/edit"}
+                          class="p-2 rounded-lg hover:bg-base-200 transition-colors duration-150"
+                          title="Edit"
+                        >
+                          <.icon name="hero-pencil" class="w-4 h-4 text-base-content/70" />
                         </a>
                         <button
                           phx-click="delete_alert"
                           phx-value-id={rule.id}
                           data-confirm="Are you sure you want to delete this alert rule?"
-                          class="btn btn-ghost btn-sm text-error"
+                          class="p-2 rounded-lg hover:bg-error/10 transition-colors duration-150"
+                          title="Delete"
                         >
-                          <.icon name="hero-trash" class="w-4 h-4" />
+                          <.icon name="hero-trash" class="w-4 h-4 text-error" />
                         </button>
                       </div>
                     </div>
 
-                    <div class="mt-4 pt-4 border-t border-base-300">
-                      <div class="flex items-center gap-2 text-sm text-base-content/60">
-                        <.icon name="hero-link" class="w-4 h-4" />
-                        <span class="truncate">{rule.webhook_url}</span>
+                    <div class="mt-4 pt-4 border-t border-base-200">
+                      <div class="flex items-center gap-2 text-sm">
+                        <.icon name="hero-link" class="w-4 h-4 text-base-content/40" />
+                        <span class="text-base-content/60 truncate font-mono text-xs">{rule.webhook_url}</span>
                       </div>
                     </div>
                   </div>
@@ -304,14 +329,20 @@ defmodule PulsekitWeb.AlertsLive do
             </div>
           <% end %>
         <% else %>
-          <div class="card bg-base-100 border border-base-300">
-            <div class="card-body items-center text-center py-16">
-              <.icon name="hero-folder-plus" class="w-16 h-16 text-base-content/30" />
-              <h2 class="card-title mt-4">No projects yet</h2>
-              <p class="text-base-content/60">Create a project first to configure alerts.</p>
-              <div class="card-actions mt-4">
-                <a href="/projects/new" class="btn btn-primary">Create Project</a>
+          <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm">
+            <div class="flex flex-col items-center text-center py-20 px-6">
+              <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <.icon name="hero-folder-plus" class="w-10 h-10 text-primary" />
               </div>
+              <h2 class="text-xl font-semibold text-base-content">No projects yet</h2>
+              <p class="text-base-content/60 max-w-md mt-2">Create a project first to configure alerts.</p>
+              <a
+                href="/projects/new"
+                class="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-lg bg-primary text-primary-content font-medium text-sm hover:brightness-110 transition-all duration-150 shadow-sm hover:shadow-md"
+              >
+                <.icon name="hero-plus" class="w-4 h-4" />
+                Create Project
+              </a>
             </div>
           </div>
         <% end %>
@@ -319,36 +350,47 @@ defmodule PulsekitWeb.AlertsLive do
 
       <%!-- Alert Modal --%>
       <%= if @show_modal do %>
-        <div class="modal modal-open">
-          <div class="modal-box max-w-lg">
-            <button phx-click="close_modal" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-              <.icon name="hero-x-mark" class="w-4 h-4" />
-            </button>
+        <div class="fixed inset-0 z-50 flex items-center justify-center">
+          <%!-- Backdrop --%>
+          <div
+            class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            phx-click="close_modal"
+          />
 
-            <h3 class="font-bold text-lg mb-4">
-              {if @editing_rule, do: "Edit Alert Rule", else: "Create Alert Rule"}
-            </h3>
+          <%!-- Modal --%>
+          <div class="relative w-full max-w-lg mx-4 rounded-xl border border-base-300 bg-base-100 shadow-xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-base-200">
+              <h3 class="text-lg font-semibold text-base-content">
+                {if @editing_rule, do: "Edit Alert Rule", else: "Create Alert Rule"}
+              </h3>
+              <button
+                phx-click="close_modal"
+                class="p-1.5 rounded-lg hover:bg-base-200 transition-colors duration-150"
+              >
+                <.icon name="hero-x-mark" class="w-5 h-5 text-base-content/50" />
+              </button>
+            </div>
 
-            <form phx-submit={if @editing_rule, do: "update_alert", else: "create_alert"} class="space-y-4" id="alert-form">
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text">Name</span>
-                </label>
+            <form phx-submit={if @editing_rule, do: "update_alert", else: "create_alert"} class="p-6 space-y-5" id="alert-form">
+              <div>
+                <label class="block text-sm font-medium text-base-content mb-1.5">Name</label>
                 <input
                   type="text"
                   name="name"
                   value={if @editing_rule, do: @editing_rule.name, else: ""}
                   placeholder="High Error Rate Alert"
-                  class="input input-bordered w-full"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150"
                   required
                 />
               </div>
 
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text">Condition Type</span>
-                </label>
-                <select name="condition_type" class="select select-bordered w-full" id="condition-type-select">
+              <div>
+                <label class="block text-sm font-medium text-base-content mb-1.5">Condition Type</label>
+                <select
+                  name="condition_type"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer"
+                  id="condition-type-select"
+                >
                   <option value="threshold" selected={@editing_rule && @editing_rule.condition_type == "threshold"}>
                     Threshold (event count)
                   </option>
@@ -361,51 +403,48 @@ defmodule PulsekitWeb.AlertsLive do
                 </select>
               </div>
 
-              <%!-- Threshold Config --%>
-              <div class="form-control" id="threshold-config">
-                <label class="label">
-                  <span class="label-text">Threshold Count</span>
-                </label>
+              <div id="threshold-config">
+                <label class="block text-sm font-medium text-base-content mb-1.5">Threshold Count</label>
                 <input
                   type="number"
                   name="threshold_count"
                   value={get_config_value(@editing_rule, "count", "10")}
                   min="1"
-                  class="input input-bordered w-full"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150"
                 />
-                <label class="label">
-                  <span class="label-text-alt">Number of events to trigger alert</span>
-                </label>
+                <p class="mt-1 text-xs text-base-content/50">Number of events to trigger alert</p>
               </div>
 
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text">Webhook URL</span>
-                </label>
+              <div>
+                <label class="block text-sm font-medium text-base-content mb-1.5">Webhook URL</label>
                 <input
                   type="url"
                   name="webhook_url"
                   value={if @editing_rule, do: @editing_rule.webhook_url, else: ""}
                   placeholder="https://hooks.slack.com/services/..."
-                  class="input input-bordered w-full"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 font-mono text-sm"
                   required
                 />
-                <label class="label">
-                  <span class="label-text-alt">URL to receive webhook notifications</span>
-                </label>
+                <p class="mt-1 text-xs text-base-content/50">URL to receive webhook notifications</p>
               </div>
 
-              <div class="modal-action">
-                <button type="button" phx-click="close_modal" class="btn btn-ghost">
+              <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  phx-click="close_modal"
+                  class="px-4 py-2 rounded-lg text-sm font-medium text-base-content hover:bg-base-200 transition-colors duration-150"
+                >
                   Cancel
                 </button>
-                <button type="submit" class="btn btn-primary">
+                <button
+                  type="submit"
+                  class="px-4 py-2 rounded-lg bg-primary text-primary-content text-sm font-medium hover:brightness-110 transition-all duration-150 shadow-sm"
+                >
                   {if @editing_rule, do: "Save Changes", else: "Create Alert"}
                 </button>
               </div>
             </form>
           </div>
-          <div class="modal-backdrop bg-base-300/50" phx-click="close_modal"></div>
         </div>
       <% end %>
     </Layouts.app>
