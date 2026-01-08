@@ -1,6 +1,6 @@
 {
   "name": "@120356aa/pulsekit-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "PulseKit SDK for TypeScript/JavaScript - Error tracking and event monitoring",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -36,11 +36,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pulsekit/pulsekit"
+    "url": "https://github.com/snowdamiz/pulsekit-mono"
   },
-  "homepage": "https://github.com/pulsekit/pulsekit#readme",
+  "homepage": "https://github.com/snowdamiz/pulsekit-mono#readme",
   "bugs": {
-    "url": "https://github.com/pulsekit/pulsekit/issues"
+    "url": "https://github.com/snowdamiz/pulsekit-mono/issues"
   },
   "publishConfig": {
     "access": "public"

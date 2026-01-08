@@ -25,7 +25,7 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/pulsekit/pulsekit.git
+git clone https://github.com/snowdamiz/pulsekit-mono
 cd pulsekit
 ```
 
@@ -74,11 +74,11 @@ mix phx.server
 ### TypeScript/JavaScript
 
 ```bash
-npm install @pulsekit/sdk
+npm install @120356aa/pulsekit-sdk
 ```
 
 ```typescript
-import { PulseKit } from '@pulsekit/sdk';
+import { PulseKit } from '@120356aa/pulsekit-sdk';
 
 const pulse = new PulseKit({
   endpoint: 'https://your-pulsekit-instance.com',

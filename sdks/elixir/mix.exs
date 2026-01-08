@@ -2,7 +2,6 @@ defmodule PulseKit.MixProject do
   use Mix.Project
 
   @version "1.0.0"
-  @source_url "https://github.com/pulsekit/pulsekit"
 
   def project do
     [
@@ -13,8 +12,7 @@ defmodule PulseKit.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
-      docs: docs(),
-      source_url: @source_url
+      docs: docs()
     ]
   end
 
@@ -39,9 +37,10 @@ defmodule PulseKit.MixProject do
 
   defp package do
     [
+      name: "pulsekit",
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url},
-      maintainers: ["PulseKit Team"]
+      links: %{},
+      files: ~w(lib mix.exs README.md LICENSE)
     ]
   end
 
