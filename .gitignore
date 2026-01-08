@@ -1,0 +1,72 @@
+# Elixir / Phoenix
+# Build artifacts
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+/tmp/
+*.tar
+
+# Ignore package tarball
+pulsekit-*.tar
+
+# Phoenix assets
+/priv/static/assets/
+/priv/static/cache_manifest.json
+
+# Node.js
+npm-debug.log
+node_modules/
+/assets/node_modules/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.sum
+
+# TypeScript / JavaScript
+dist/
+*.tsbuildinfo
+.npm
+.eslintcache
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS Files
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
