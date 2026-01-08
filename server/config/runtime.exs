@@ -23,6 +23,19 @@ end
 config :pulsekit, PulsekitWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# ## Master User Configuration
+#
+# The master user is bootstrapped from environment variables on application start.
+# This user has full access and can invite other users.
+#
+# Set these environment variables to configure the master user:
+#
+#     PULSEKIT_MASTER_EMAIL=admin@example.com
+#     PULSEKIT_MASTER_PASSWORD=your-secure-password
+#
+# If these are not set, no master user will be created automatically.
+# You can set them at any time and restart the server to create/update the master user.
+
 if config_env() == :prod do
   database_path =
     System.get_env("DATABASE_PATH") ||

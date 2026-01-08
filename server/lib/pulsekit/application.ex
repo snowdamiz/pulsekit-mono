@@ -12,8 +12,8 @@ defmodule Pulsekit.Application do
       Pulsekit.Repo,
       {DNSCluster, query: Application.get_env(:pulsekit, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Pulsekit.PubSub},
-      # Start a worker by calling: Pulsekit.Worker.start_link(arg)
-      # {Pulsekit.Worker, arg},
+      # Log cleanup worker - runs daily to delete old events
+      Pulsekit.LogCleaner,
       # Start to serve requests, typically the last entry
       PulsekitWeb.Endpoint
     ]
@@ -21,7 +21,12 @@ defmodule Pulsekit.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pulsekit.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    # Ensure master user exists after supervisor starts
+    ensure_master_user()
+
+    result
   end
 
   # Tell Phoenix to update the endpoint configuration
@@ -30,5 +35,14 @@ defmodule Pulsekit.Application do
   def config_change(changed, _new, removed) do
     PulsekitWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp ensure_master_user do
+    # Run in a separate task to not block application startup
+    Task.start(fn ->
+      # Small delay to ensure repo is fully ready
+      Process.sleep(100)
+      Pulsekit.Accounts.ensure_master_user()
+    end)
   end
 end

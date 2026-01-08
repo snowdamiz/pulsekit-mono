@@ -1,14 +1,18 @@
 defmodule PulsekitWeb.SettingsLive do
   use PulsekitWeb, :live_view
 
+  alias Pulsekit.Settings
   alias PulsekitWeb.LiveHelpers
 
   @impl true
   def mount(params, session, socket) do
+    retention_days = Settings.log_retention_days()
+
     socket =
       socket
       |> assign(:page_title, "Settings")
       |> assign(:current_path, "/settings")
+      |> assign(:retention_days, retention_days)
       |> LiveHelpers.assign_organization_context(params, session)
 
     {:ok, socket}
@@ -17,6 +21,17 @@ defmodule PulsekitWeb.SettingsLive do
   @impl true
   def handle_params(_params, _uri, socket) do
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("update_retention", %{"retention" => days}, socket) do
+    days = String.to_integer(days)
+    Settings.set_log_retention_days(days)
+
+    {:noreply,
+     socket
+     |> assign(:retention_days, days)
+     |> put_flash(:info, "Log retention setting updated successfully.")}
   end
 
   @impl true
@@ -69,12 +84,16 @@ defmodule PulsekitWeb.SettingsLive do
                 <label class="block text-sm font-medium text-base-content mb-1.5">
                   Keep events for
                 </label>
-                <select class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer">
-                  <option value="7">7 days</option>
-                  <option value="30" selected>30 days</option>
-                  <option value="90">90 days</option>
-                  <option value="365">1 year</option>
-                  <option value="0">Forever</option>
+                <select
+                  name="retention"
+                  phx-change="update_retention"
+                  class="w-full px-3 py-2.5 rounded-lg border border-base-300 bg-base-100 text-base-content focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer"
+                >
+                  <option value="7" selected={@retention_days == 7}>7 days</option>
+                  <option value="30" selected={@retention_days == 30}>30 days</option>
+                  <option value="90" selected={@retention_days == 90}>90 days</option>
+                  <option value="365" selected={@retention_days == 365}>1 year</option>
+                  <option value="0" selected={@retention_days == 0}>Forever</option>
                 </select>
                 <p class="mt-2 text-xs text-base-content/50">
                   Older events will be automatically deleted

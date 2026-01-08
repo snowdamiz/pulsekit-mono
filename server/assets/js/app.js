@@ -24,11 +24,99 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
+// Command Palette Hook
+const CommandPalette = {
+  mounted() {
+    this.handleKeydown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const palette = document.getElementById('command-palette');
+        if (palette) {
+          palette.classList.toggle('hidden');
+          if (!palette.classList.contains('hidden')) {
+            const input = document.getElementById('command-palette-input');
+            if (input) input.focus();
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        const palette = document.getElementById('command-palette');
+        if (palette && !palette.classList.contains('hidden')) {
+          palette.classList.add('hidden');
+        }
+      }
+    };
+    document.addEventListener('keydown', this.handleKeydown);
+  },
+  destroyed() {
+    document.removeEventListener('keydown', this.handleKeydown);
+  }
+}
+
+// Fullscreen Hook
+const Fullscreen = {
+  mounted() {
+    // Toggle browser fullscreen directly on click (requires user gesture)
+    this.el.addEventListener("click", (e) => {
+      const willBeFullscreen = this.el.dataset.fullscreen !== "true";
+      if (willBeFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Handle keyboard shortcuts
+    this.handleKeydown = (e) => {
+      const isFullscreen = this.el.dataset.fullscreen === "true";
+      
+      // F key to toggle (must be user gesture, so we handle fullscreen here too)
+      if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && 
+          document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        
+        if (!isFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+        this.pushEvent("toggle_fullscreen", {});
+      }
+      
+      // Escape to exit fullscreen
+      if (e.key === 'Escape' && isFullscreen) {
+        // Browser handles exiting fullscreen on Escape automatically
+        this.pushEvent("exit_fullscreen", {});
+      }
+    };
+    document.addEventListener('keydown', this.handleKeydown);
+
+    // Sync state when browser fullscreen changes (e.g., user presses F11 or Escape)
+    this.handleFullscreenChange = () => {
+      const isFullscreenState = this.el.dataset.fullscreen === "true";
+      const isBrowserFullscreen = !!document.fullscreenElement;
+      
+      // If browser exited fullscreen but our state says we're fullscreen, sync state
+      if (!isBrowserFullscreen && isFullscreenState) {
+        this.pushEvent("exit_fullscreen", {});
+      }
+    };
+    document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+  },
+  destroyed() {
+    document.removeEventListener('keydown', this.handleKeydown);
+    document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {},
+  hooks: { CommandPalette, Fullscreen },
 })
 
 // Show progress bar on live navigation and form submits

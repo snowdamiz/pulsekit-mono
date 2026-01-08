@@ -1,19 +1,20 @@
 {
-  "name": "@pulsekit/sdk",
-  "version": "1.0.0",
+  "name": "@120356aa/pulsekit-sdk",
+  "version": "1.0.1",
   "description": "PulseKit SDK for TypeScript/JavaScript - Error tracking and event monitoring",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
@@ -27,13 +28,25 @@
     "monitoring",
     "observability",
     "logging",
-    "events"
+    "events",
+    "typescript",
+    "sdk"
   ],
   "author": "",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/pulsekit/pulsekit"
+  },
+  "homepage": "https://github.com/pulsekit/pulsekit#readme",
+  "bugs": {
+    "url": "https://github.com/pulsekit/pulsekit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

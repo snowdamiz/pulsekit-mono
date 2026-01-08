@@ -1,21 +1,21 @@
-# @pulsekit/sdk
+# @120356aa/pulsekit-sdk
 
 Official PulseKit SDK for TypeScript/JavaScript applications.
 
 ## Installation
 
 ```bash
-npm install @pulsekit/sdk
+npm install @120356aa/pulsekit-sdk
 # or
-yarn add @pulsekit/sdk
+yarn add @120356aa/pulsekit-sdk
 # or
-pnpm add @pulsekit/sdk
+pnpm add @120356aa/pulsekit-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { PulseKit } from '@pulsekit/sdk';
+import { PulseKit } from '@120356aa/pulsekit-sdk';
 
 const pulse = new PulseKit({
   endpoint: 'https://your-pulsekit-instance.com',

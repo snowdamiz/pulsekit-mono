@@ -35,14 +35,18 @@ defmodule PulsekitWeb.Layouts do
   attr :current_path, :string, default: "/"
   attr :current_organization, :map, default: nil
   attr :organizations, :list, default: []
+  attr :fullscreen, :boolean, default: false
 
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <div class="min-h-screen bg-base-200">
+    <div class={["min-h-screen bg-base-200 transition-all duration-300", @fullscreen && "fullscreen-mode"]}>
       <%!-- Sidebar --%>
-      <aside class="fixed left-0 top-0 h-full w-64 bg-base-100 border-r border-base-300 z-40 flex flex-col">
+      <aside class={[
+        "fixed left-0 top-0 h-full w-64 bg-base-100 border-r border-base-300 z-40 flex flex-col transition-transform duration-300 ease-in-out",
+        @fullscreen && "-translate-x-full"
+      ]}>
         <%!-- Logo --%>
         <div class="p-5 border-b border-base-200">
           <a href="/" class="flex items-center gap-3 group">
@@ -114,6 +118,9 @@ defmodule PulsekitWeb.Layouts do
           <.nav_link href="/" icon="hero-chart-bar" current_path={@current_path}>
             Dashboard
           </.nav_link>
+          <.nav_link href="/issues" icon="hero-bug-ant" current_path={@current_path}>
+            Issues
+          </.nav_link>
           <.nav_link href="/events" icon="hero-exclamation-triangle" current_path={@current_path}>
             Events
           </.nav_link>
@@ -131,21 +138,43 @@ defmodule PulsekitWeb.Layouts do
           <.nav_link href="/organizations" icon="hero-building-office-2" current_path={@current_path}>
             Workspaces
           </.nav_link>
+          <.nav_link href="/users" icon="hero-users" current_path={@current_path}>
+            Users
+          </.nav_link>
           <.nav_link href="/settings" icon="hero-cog-6-tooth" current_path={@current_path}>
             Settings
           </.nav_link>
           <div class="pt-3 px-1">
             <.theme_toggle />
           </div>
+          <div class="pt-2">
+            <a
+              href="/auth/logout"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/70 hover:bg-base-200 hover:text-base-content transition-all duration-150"
+            >
+              <.icon name="hero-arrow-left-start-on-rectangle" class="w-5 h-5 text-base-content/50" />
+              <span>Sign out</span>
+            </a>
+          </div>
         </div>
       </aside>
 
       <%!-- Main content --%>
-      <main class="ml-64 min-h-screen">
-        <div class="p-8 max-w-7xl mx-auto">
+      <main class={[
+        "min-h-screen transition-all duration-300 ease-in-out",
+        if(@fullscreen, do: "ml-0", else: "ml-64")
+      ]}>
+        <div class={[
+          "p-8 mx-auto transition-all duration-300",
+          if(@fullscreen, do: "max-w-full px-6", else: "max-w-7xl")
+        ]}>
           {render_slot(@inner_block)}
         </div>
       </main>
+
+      <%!-- Command Palette --%>
+      <.command_palette id="command-palette" />
+      <div id="cmd-palette-hook" phx-hook="CommandPalette" />
     </div>
 
     <.flash_group flash={@flash} />

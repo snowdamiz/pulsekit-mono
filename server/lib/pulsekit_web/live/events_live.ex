@@ -5,6 +5,7 @@ defmodule PulsekitWeb.EventsLive do
   alias Pulsekit.Events
   alias Pulsekit.Events.Event
   alias PulsekitWeb.LiveHelpers
+  alias PulsekitWeb.CoreComponents
 
   @impl true
   def mount(params, session, socket) do
@@ -16,13 +17,21 @@ defmodule PulsekitWeb.EventsLive do
       |> load_projects()
       |> assign(:level_filter, nil)
       |> assign(:type_filter, nil)
+      |> assign(:environment_filter, nil)
+      |> assign(:project_filter, nil)
+      |> assign(:time_range, "24h")
       |> assign(:search, "")
       |> assign(:events_empty?, true)
+      |> assign(:environments, [])
+      |> assign(:live_tail, false)
+      |> assign(:paused, false)
+      |> assign(:new_events_count, 0)
       |> stream(:events, [])
+      |> load_environments()
       |> load_events()
 
-    if connected?(socket) and socket.assigns.selected_project do
-      Events.subscribe(socket.assigns.selected_project.id)
+    if connected?(socket) and socket.assigns.current_organization do
+      Events.subscribe_organization(socket.assigns.current_organization.id)
     end
 
     {:ok, socket}
@@ -37,7 +46,6 @@ defmodule PulsekitWeb.EventsLive do
 
     socket
     |> assign(:projects, projects)
-    |> assign(:selected_project, List.first(projects))
   end
 
   @impl true
@@ -45,19 +53,20 @@ defmodule PulsekitWeb.EventsLive do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("select_project", %{"id" => id}, socket) do
-    project = Projects.get_project!(id)
-
-    if socket.assigns.selected_project do
-      Phoenix.PubSub.unsubscribe(Pulsekit.PubSub, "events:#{socket.assigns.selected_project.id}")
+  defp load_environments(socket) do
+    case socket.assigns.current_organization do
+      nil -> assign(socket, :environments, [])
+      org -> assign(socket, :environments, Events.get_environments_for_organization(org.id))
     end
+  end
 
-    Events.subscribe(project.id)
+  @impl true
+  def handle_event("filter_project", %{"project" => project_id}, socket) do
+    project_id = if project_id == "", do: nil, else: project_id
 
     socket =
       socket
-      |> assign(:selected_project, project)
+      |> assign(:project_filter, project_id)
       |> load_events()
 
     {:noreply, socket}
@@ -88,6 +97,28 @@ defmodule PulsekitWeb.EventsLive do
   end
 
   @impl true
+  def handle_event("filter_environment", %{"environment" => env}, socket) do
+    env = if env == "", do: nil, else: env
+
+    socket =
+      socket
+      |> assign(:environment_filter, env)
+      |> load_events()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("time_range_changed", %{"range" => range}, socket) do
+    socket =
+      socket
+      |> assign(:time_range, range)
+      |> load_events()
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("search", %{"search" => search}, socket) do
     socket =
       socket
@@ -103,6 +134,9 @@ defmodule PulsekitWeb.EventsLive do
       socket
       |> assign(:level_filter, nil)
       |> assign(:type_filter, nil)
+      |> assign(:environment_filter, nil)
+      |> assign(:project_filter, nil)
+      |> assign(:time_range, "24h")
       |> assign(:search, "")
       |> load_events()
 
@@ -110,12 +144,51 @@ defmodule PulsekitWeb.EventsLive do
   end
 
   @impl true
+  def handle_event("toggle_live_tail", _params, socket) do
+    live_tail = !socket.assigns.live_tail
+
+    socket =
+      socket
+      |> assign(:live_tail, live_tail)
+      |> assign(:paused, false)
+      |> assign(:new_events_count, 0)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("pause_live_tail", _params, socket) do
+    {:noreply, assign(socket, :paused, true)}
+  end
+
+  @impl true
+  def handle_event("resume_live_tail", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:paused, false)
+     |> assign(:new_events_count, 0)
+     |> load_events()}
+  end
+
+  @impl true
   def handle_info({:new_event, event}, socket) do
     if matches_filters?(event, socket.assigns) do
-      {:noreply,
-       socket
-       |> assign(:events_empty?, false)
-       |> stream_insert(:events, event, at: 0)}
+      cond do
+        socket.assigns.live_tail and not socket.assigns.paused ->
+          {:noreply,
+           socket
+           |> assign(:events_empty?, false)
+           |> stream_insert(:events, event, at: 0)}
+
+        socket.assigns.live_tail and socket.assigns.paused ->
+          {:noreply, assign(socket, :new_events_count, socket.assigns.new_events_count + 1)}
+
+        true ->
+          {:noreply,
+           socket
+           |> assign(:events_empty?, false)
+           |> stream_insert(:events, event, at: 0)}
+      end
     else
       {:noreply, socket}
     end
@@ -127,21 +200,26 @@ defmodule PulsekitWeb.EventsLive do
   end
 
   defp load_events(socket) do
-    case socket.assigns.selected_project do
+    case socket.assigns.current_organization do
       nil ->
         socket
         |> assign(:events_empty?, true)
         |> stream(:events, [], reset: true)
 
-      project ->
+      org ->
+        since = CoreComponents.time_range_to_since(socket.assigns.time_range)
+
         opts = [
           limit: 100,
           level: socket.assigns.level_filter,
           type: socket.assigns.type_filter,
-          search: socket.assigns.search
+          search: socket.assigns.search,
+          since: since,
+          environment: socket.assigns.environment_filter,
+          project_id: socket.assigns.project_filter
         ]
 
-        events = Events.list_events(project.id, opts)
+        events = Events.list_events_for_organization(org.id, opts)
 
         socket
         |> assign(:events_empty?, events == [])
@@ -152,11 +230,13 @@ defmodule PulsekitWeb.EventsLive do
   defp matches_filters?(event, assigns) do
     level_match = is_nil(assigns.level_filter) or event.level == assigns.level_filter
     type_match = is_nil(assigns.type_filter) or event.type == assigns.type_filter
+    env_match = is_nil(assigns.environment_filter) or event.environment == assigns.environment_filter
+    project_match = is_nil(assigns.project_filter) or event.project_id == assigns.project_filter
     search_match = assigns.search == "" or
       String.contains?(String.downcase(event.message || ""), String.downcase(assigns.search)) or
       String.contains?(String.downcase(event.type), String.downcase(assigns.search))
 
-    level_match and type_match and search_match
+    level_match and type_match and env_match and project_match and search_match
   end
 
   @impl true
@@ -165,49 +245,79 @@ defmodule PulsekitWeb.EventsLive do
     <Layouts.app flash={@flash} current_path={@current_path} current_organization={@current_organization} organizations={@organizations}>
       <div class="space-y-6">
         <%!-- Header --%>
-        <div class="flex items-start justify-between">
+        <div class="flex items-start justify-between flex-wrap gap-4">
           <div>
             <h1 class="text-2xl font-bold text-base-content tracking-tight">Events</h1>
-            <p class="text-base-content/60 mt-1">View and filter all captured events</p>
+            <p class="text-base-content/60 mt-1">
+              <%= if @current_organization do %>
+                View and filter all events across <span class="font-medium text-base-content">{@current_organization.name}</span>
+              <% else %>
+                View and filter all captured events
+              <% end %>
+            </p>
           </div>
 
-          <%= if length(@projects) > 0 do %>
-            <div class="dropdown dropdown-end">
-              <div
-                tabindex="0"
-                role="button"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg border border-base-300 bg-base-100 hover:bg-base-200 transition-colors duration-150 cursor-pointer"
+          <div class="flex items-center gap-3 flex-wrap">
+            <%!-- Live Tail Toggle --%>
+            <%= if @current_organization do %>
+              <button
+                phx-click="toggle_live_tail"
+                class={[
+                  "flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-150",
+                  if(@live_tail,
+                    do: "border-success bg-success/10 text-success",
+                    else: "border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200"
+                  )
+                ]}
               >
-                <.icon name="hero-folder" class="w-4 h-4 text-primary" />
-                <span class="font-medium text-sm">{if @selected_project, do: @selected_project.name, else: "Select Project"}</span>
-                <.icon name="hero-chevron-down" class="w-4 h-4 text-base-content/50" />
-              </div>
-              <ul tabindex="0" class="dropdown-content z-[1] mt-2 p-1.5 w-56 bg-base-100 rounded-lg border border-base-300 shadow-lg">
-                <%= for project <- @projects do %>
-                  <li>
-                    <button
-                      phx-click="select_project"
-                      phx-value-id={project.id}
-                      class={[
-                        "flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-left transition-colors duration-100",
-                        if(@selected_project && @selected_project.id == project.id,
-                          do: "bg-primary/10 text-primary font-medium",
-                          else: "text-base-content hover:bg-base-200"
-                        )
-                      ]}
-                    >
-                      <.icon name="hero-folder" class="w-4 h-4" />
-                      <span class="truncate">{project.name}</span>
-                      <.icon :if={@selected_project && @selected_project.id == project.id} name="hero-check" class="w-4 h-4 ml-auto" />
-                    </button>
-                  </li>
+                <%= if @live_tail do %>
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                  </span>
+                  Live
+                <% else %>
+                  <.icon name="hero-signal" class="w-4 h-4" />
+                  Live Tail
                 <% end %>
-              </ul>
-            </div>
-          <% end %>
+              </button>
+            <% end %>
+
+            <%!-- Time Range Selector --%>
+            <%= if @current_organization && !@live_tail do %>
+              <.time_range_selector selected={@time_range} on_change="time_range_changed" />
+            <% end %>
+          </div>
         </div>
 
-        <%= if @selected_project do %>
+        <%= if @current_organization do %>
+          <%!-- Live Tail Paused Banner --%>
+          <%= if @live_tail and @paused do %>
+            <div class="rounded-xl border border-warning/30 bg-warning/10 p-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <.icon name="hero-pause-circle" class="w-5 h-5 text-warning" />
+                  <div>
+                    <p class="font-medium text-warning">Live tail paused</p>
+                    <p class="text-sm text-warning/70">
+                      <%= if @new_events_count > 0 do %>
+                        {@new_events_count} new event{if @new_events_count > 1, do: "s", else: ""} arrived
+                      <% else %>
+                        Scroll up to see new events
+                      <% end %>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  phx-click="resume_live_tail"
+                  class="px-4 py-2 rounded-lg bg-warning text-warning-content text-sm font-medium hover:brightness-110 transition-all duration-150"
+                >
+                  Resume
+                </button>
+              </div>
+            </div>
+          <% end %>
+
           <%!-- Filters --%>
           <div class="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
             <div class="flex flex-wrap items-center gap-3">
@@ -228,6 +338,22 @@ defmodule PulsekitWeb.EventsLive do
                 </form>
               </div>
 
+              <%!-- Project Filter --%>
+              <%= if length(@projects) > 0 do %>
+                <select
+                  name="project"
+                  class="px-4 py-2.5 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer"
+                  phx-change="filter_project"
+                >
+                  <option value="">All Projects</option>
+                  <%= for project <- @projects do %>
+                    <option value={project.id} selected={@project_filter == project.id}>
+                      {project.name}
+                    </option>
+                  <% end %>
+                </select>
+              <% end %>
+
               <%!-- Level Filter --%>
               <select
                 name="level"
@@ -242,8 +368,24 @@ defmodule PulsekitWeb.EventsLive do
                 <% end %>
               </select>
 
+              <%!-- Environment Filter --%>
+              <%= if length(@environments) > 0 do %>
+                <select
+                  name="environment"
+                  class="px-4 py-2.5 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-150 cursor-pointer"
+                  phx-change="filter_environment"
+                >
+                  <option value="">All Environments</option>
+                  <%= for env <- @environments do %>
+                    <option value={env} selected={@environment_filter == env}>
+                      {env}
+                    </option>
+                  <% end %>
+                </select>
+              <% end %>
+
               <%!-- Active Filters Indicator / Clear --%>
-              <%= if @level_filter || @type_filter || @search != "" do %>
+              <%= if @level_filter || @type_filter || @environment_filter || @project_filter || @search != "" do %>
                 <button
                   phx-click="clear_filters"
                   class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors duration-150"
@@ -263,6 +405,7 @@ defmodule PulsekitWeb.EventsLive do
                   <tr class="border-b border-base-200 bg-base-200/30">
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-24">Level</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Type</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-32">Project</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60">Message</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-28">Environment</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/60 w-40">Time</th>
@@ -270,8 +413,8 @@ defmodule PulsekitWeb.EventsLive do
                   </tr>
                 </thead>
                 <tbody id="events" phx-update="stream" class="divide-y divide-base-200">
-                  <tr class="hidden only:table-row">
-                    <td colspan="6" class="text-center py-16">
+                  <tr id="events-empty" class="hidden only:table-row">
+                    <td colspan="7" class="text-center py-16">
                       <div class="flex flex-col items-center">
                         <div class="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center mb-4">
                           <.icon name="hero-inbox" class="w-7 h-7 text-base-content/30" />
@@ -292,6 +435,16 @@ defmodule PulsekitWeb.EventsLive do
                     </td>
                     <td class="px-4 py-3.5">
                       <span class="font-medium text-sm text-base-content">{event.type}</span>
+                    </td>
+                    <td class="px-4 py-3.5">
+                      <%= if event.project do %>
+                        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                          <.icon name="hero-folder" class="w-3 h-3" />
+                          {event.project.name}
+                        </span>
+                      <% else %>
+                        <span class="text-base-content/30 text-sm">-</span>
+                      <% end %>
                     </td>
                     <td class="px-4 py-3.5 max-w-md">
                       <span class="text-sm text-base-content/70 truncate block">{event.message || "-"}</span>
@@ -317,22 +470,22 @@ defmodule PulsekitWeb.EventsLive do
             </div>
           </div>
         <% else %>
-          <%!-- No Projects State --%>
+          <%!-- No Workspace State --%>
           <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm">
             <div class="flex flex-col items-center text-center py-20 px-6">
               <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                <.icon name="hero-folder-plus" class="w-10 h-10 text-primary" />
+                <.icon name="hero-building-office-2" class="w-10 h-10 text-primary" />
               </div>
-              <h2 class="text-xl font-semibold text-base-content">No projects yet</h2>
+              <h2 class="text-xl font-semibold text-base-content">No workspace selected</h2>
               <p class="text-base-content/60 max-w-md mt-2">
-                Create a project to start viewing events.
+                Select or create a workspace to start viewing events.
               </p>
               <a
-                href="/projects/new"
+                href="/organizations"
                 class="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-lg bg-primary text-primary-content font-medium text-sm hover:brightness-110 transition-all duration-150 shadow-sm hover:shadow-md"
               >
                 <.icon name="hero-plus" class="w-4 h-4" />
-                Create Project
+                Manage Workspaces
               </a>
             </div>
           </div>

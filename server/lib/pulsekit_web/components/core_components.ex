@@ -615,4 +615,308 @@ defmodule PulsekitWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Renders a time range selector component.
+
+  ## Examples
+
+      <.time_range_selector selected={@time_range} on_change="time_range_changed" />
+  """
+  attr :selected, :string, default: "24h"
+  attr :on_change, :string, default: "time_range_changed"
+  attr :id, :string, default: "time-range-selector"
+
+  @time_ranges [
+    {"1h", "Last hour"},
+    {"6h", "Last 6 hours"},
+    {"24h", "Last 24 hours"},
+    {"7d", "Last 7 days"},
+    {"30d", "Last 30 days"}
+  ]
+
+  def time_range_selector(assigns) do
+    assigns = assign(assigns, :time_ranges, @time_ranges)
+
+    ~H"""
+    <div class="flex items-center gap-1 p-1 rounded-lg bg-base-200/50 border border-base-300" id={@id}>
+      <%= for {value, label} <- @time_ranges do %>
+        <button
+          type="button"
+          phx-click={@on_change}
+          phx-value-range={value}
+          class={[
+            "px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150",
+            if(@selected == value,
+              do: "bg-base-100 text-base-content shadow-sm border border-base-300",
+              else: "text-base-content/60 hover:text-base-content hover:bg-base-200"
+            )
+          ]}
+        >
+          {label}
+        </button>
+      <% end %>
+    </div>
+    """
+  end
+
+  @doc """
+  Converts a time range string to a DateTime since value.
+  """
+  def time_range_to_since("1h"), do: DateTime.add(DateTime.utc_now(), -1, :hour)
+  def time_range_to_since("6h"), do: DateTime.add(DateTime.utc_now(), -6, :hour)
+  def time_range_to_since("24h"), do: DateTime.add(DateTime.utc_now(), -24, :hour)
+  def time_range_to_since("7d"), do: DateTime.add(DateTime.utc_now(), -7, :day)
+  def time_range_to_since("30d"), do: DateTime.add(DateTime.utc_now(), -30, :day)
+  def time_range_to_since(_), do: DateTime.add(DateTime.utc_now(), -24, :hour)
+
+  @doc """
+  Renders a sparkline chart using SVG.
+
+  ## Examples
+
+      <.sparkline data={@timeline_data} />
+  """
+  attr :data, :list, required: true, doc: "List of {datetime, count} tuples"
+  attr :width, :integer, default: 200
+  attr :height, :integer, default: 40
+  attr :color, :string, default: "primary"
+  attr :class, :any, default: nil
+
+  def sparkline(assigns) do
+    values = Enum.map(assigns.data, fn {_dt, count} -> count end)
+    max_value = Enum.max(values ++ [1])
+    min_value = 0
+
+    points =
+      values
+      |> Enum.with_index()
+      |> Enum.map(fn {value, index} ->
+        x = index / max(length(values) - 1, 1) * assigns.width
+        y = assigns.height - (value - min_value) / max(max_value - min_value, 1) * assigns.height
+        {x, y}
+      end)
+
+    path_data =
+      points
+      |> Enum.with_index()
+      |> Enum.map(fn {{x, y}, index} ->
+        if index == 0, do: "M #{x} #{y}", else: "L #{x} #{y}"
+      end)
+      |> Enum.join(" ")
+
+    # Create fill area path
+    fill_path =
+      if length(points) > 0 do
+        {first_x, _} = List.first(points)
+        {last_x, _} = List.last(points)
+        path_data <> " L #{last_x} #{assigns.height} L #{first_x} #{assigns.height} Z"
+      else
+        ""
+      end
+
+    stroke_color = case assigns.color do
+      "primary" -> "stroke-primary"
+      "error" -> "stroke-error"
+      "warning" -> "stroke-warning"
+      "info" -> "stroke-info"
+      "success" -> "stroke-success"
+      _ -> "stroke-primary"
+    end
+
+    fill_color = case assigns.color do
+      "primary" -> "fill-primary/10"
+      "error" -> "fill-error/10"
+      "warning" -> "fill-warning/10"
+      "info" -> "fill-info/10"
+      "success" -> "fill-success/10"
+      _ -> "fill-primary/10"
+    end
+
+    assigns = assign(assigns, :path_data, path_data)
+    assigns = assign(assigns, :fill_path, fill_path)
+    assigns = assign(assigns, :stroke_color, stroke_color)
+    assigns = assign(assigns, :fill_color, fill_color)
+
+    ~H"""
+    <svg
+      width={@width}
+      height={@height}
+      viewBox={"0 0 #{@width} #{@height}"}
+      class={["overflow-visible", @class]}
+      preserveAspectRatio="none"
+    >
+      <%= if @fill_path != "" do %>
+        <path d={@fill_path} class={@fill_color} />
+        <path d={@path_data} fill="none" class={[@stroke_color, "stroke-[1.5]"]} stroke-linecap="round" stroke-linejoin="round" />
+      <% end %>
+    </svg>
+    """
+  end
+
+  @doc """
+  Renders an event timeline chart with labels.
+
+  ## Examples
+
+      <.event_timeline data={@timeline_data} time_range={@time_range} />
+  """
+  attr :data, :list, required: true, doc: "List of {datetime, count} tuples"
+  attr :time_range, :string, default: "24h"
+  attr :class, :any, default: nil
+
+  def event_timeline(assigns) do
+    total_events = assigns.data |> Enum.map(fn {_dt, count} -> count end) |> Enum.sum()
+
+    assigns = assign(assigns, :total_events, total_events)
+
+    ~H"""
+    <div class={["rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden", @class]}>
+      <div class="flex items-center justify-between px-5 py-4 border-b border-base-200">
+        <div>
+          <h2 class="text-base font-semibold text-base-content">Event Timeline</h2>
+          <p class="text-xs text-base-content/50 mt-0.5">{format_time_range_label(@time_range)}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-2xl font-bold text-base-content">{format_number(@total_events)}</p>
+          <p class="text-xs text-base-content/50">total events</p>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="h-24">
+          <.sparkline data={@data} width={600} height={96} color="primary" class="w-full h-full" />
+        </div>
+        <div class="flex justify-between mt-2 text-xs text-base-content/40">
+          <span>{format_timeline_start(@time_range)}</span>
+          <span>Now</span>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp format_time_range_label("1h"), do: "Last hour"
+  defp format_time_range_label("6h"), do: "Last 6 hours"
+  defp format_time_range_label("24h"), do: "Last 24 hours"
+  defp format_time_range_label("7d"), do: "Last 7 days"
+  defp format_time_range_label("30d"), do: "Last 30 days"
+  defp format_time_range_label(_), do: "Last 24 hours"
+
+  defp format_timeline_start("1h"), do: "1 hour ago"
+  defp format_timeline_start("6h"), do: "6 hours ago"
+  defp format_timeline_start("24h"), do: "24 hours ago"
+  defp format_timeline_start("7d"), do: "7 days ago"
+  defp format_timeline_start("30d"), do: "30 days ago"
+  defp format_timeline_start(_), do: "24 hours ago"
+
+  defp format_number(num) when num >= 1_000_000, do: "#{Float.round(num / 1_000_000, 1)}M"
+  defp format_number(num) when num >= 1_000, do: "#{Float.round(num / 1_000, 1)}K"
+  defp format_number(num), do: "#{num}"
+
+  @doc """
+  Renders a command palette component for global search.
+
+  ## Examples
+
+      <.command_palette id="cmd-palette" />
+  """
+  attr :id, :string, default: "command-palette"
+
+  def command_palette(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class="hidden fixed inset-0 z-[100]"
+    >
+      <%!-- Backdrop --%>
+      <div
+        class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        phx-click={hide_command_palette(@id)}
+      />
+
+      <%!-- Modal --%>
+      <div class="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-xl mx-4">
+        <div class="rounded-xl border border-base-300 bg-base-100 shadow-2xl overflow-hidden">
+          <%!-- Search Input --%>
+          <div class="flex items-center gap-3 px-4 py-3 border-b border-base-200">
+            <.icon name="hero-magnifying-glass" class="w-5 h-5 text-base-content/40 flex-shrink-0" />
+            <input
+              type="text"
+              id={@id <> "-input"}
+              placeholder="Search events, issues, projects..."
+              class="flex-1 bg-transparent border-none outline-none text-base-content placeholder:text-base-content/40 text-sm"
+              phx-keydown={hide_command_palette(@id)}
+              phx-key="Escape"
+              autocomplete="off"
+            />
+            <kbd class="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded bg-base-200 text-xs font-medium text-base-content/50">
+              ESC
+            </kbd>
+          </div>
+
+          <%!-- Quick Links --%>
+          <div class="p-2">
+            <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-base-content/40">Quick Navigation</p>
+            <nav class="space-y-0.5">
+              <.command_link href="/" icon="hero-chart-bar" label="Dashboard" shortcut="G D" />
+              <.command_link href="/issues" icon="hero-bug-ant" label="Issues" shortcut="G I" />
+              <.command_link href="/events" icon="hero-exclamation-triangle" label="Events" shortcut="G E" />
+              <.command_link href="/projects" icon="hero-folder" label="Projects" shortcut="G P" />
+              <.command_link href="/alerts" icon="hero-bell" label="Alerts" shortcut="G A" />
+              <.command_link href="/settings" icon="hero-cog-6-tooth" label="Settings" shortcut="G S" />
+            </nav>
+          </div>
+
+          <%!-- Actions --%>
+          <div class="p-2 border-t border-base-200">
+            <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-base-content/40">Actions</p>
+            <nav class="space-y-0.5">
+              <.command_link href="/projects/new" icon="hero-plus" label="Create New Project" />
+              <.command_link href="/alerts/new" icon="hero-bell-alert" label="Create New Alert" />
+            </nav>
+          </div>
+
+          <%!-- Footer --%>
+          <div class="flex items-center justify-between px-4 py-2 border-t border-base-200 bg-base-200/30">
+            <div class="flex items-center gap-4 text-xs text-base-content/50">
+              <span class="flex items-center gap-1">
+                <kbd class="px-1.5 py-0.5 rounded bg-base-200 font-medium">↑↓</kbd>
+                navigate
+              </span>
+              <span class="flex items-center gap-1">
+                <kbd class="px-1.5 py-0.5 rounded bg-base-200 font-medium">↵</kbd>
+                select
+              </span>
+            </div>
+            <span class="text-xs text-base-content/40">PulseKit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  attr :href, :string, required: true
+  attr :icon, :string, required: true
+  attr :label, :string, required: true
+  attr :shortcut, :string, default: nil
+
+  defp command_link(assigns) do
+    ~H"""
+    <a
+      href={@href}
+      class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-base-content hover:bg-base-200 transition-colors duration-100"
+    >
+      <.icon name={@icon} class="w-4 h-4 text-base-content/50" />
+      <span class="flex-1">{@label}</span>
+      <kbd :if={@shortcut} class="hidden sm:inline-flex px-1.5 py-0.5 rounded bg-base-200 text-xs font-medium text-base-content/50">
+        {@shortcut}
+      </kbd>
+    </a>
+    """
+  end
+
+  defp hide_command_palette(id) do
+    JS.add_class("hidden", to: "##{id}")
+  end
 end

@@ -4,6 +4,7 @@ defmodule PulsekitWeb.DashboardLive do
   alias Pulsekit.Projects
   alias Pulsekit.Events
   alias PulsekitWeb.LiveHelpers
+  alias PulsekitWeb.CoreComponents
 
   @impl true
   def mount(params, session, socket) do
@@ -11,12 +12,14 @@ defmodule PulsekitWeb.DashboardLive do
       socket
       |> assign(:page_title, "Dashboard")
       |> assign(:current_path, "/")
+      |> assign(:time_range, "24h")
+      |> assign(:fullscreen, false)
       |> LiveHelpers.assign_organization_context(params, session)
       |> load_projects()
       |> load_stats()
 
-    if connected?(socket) and socket.assigns.selected_project do
-      Events.subscribe(socket.assigns.selected_project.id)
+    if connected?(socket) and socket.assigns.current_organization do
+      Events.subscribe_organization(socket.assigns.current_organization.id)
     end
 
     {:ok, socket}
@@ -31,7 +34,6 @@ defmodule PulsekitWeb.DashboardLive do
 
     socket
     |> assign(:projects, projects)
-    |> assign(:selected_project, List.first(projects))
   end
 
   @impl true
@@ -40,23 +42,23 @@ defmodule PulsekitWeb.DashboardLive do
   end
 
   @impl true
-  def handle_event("select_project", %{"id" => id}, socket) do
-    project = Projects.get_project!(id)
-
-    # Unsubscribe from old project
-    if socket.assigns.selected_project do
-      Phoenix.PubSub.unsubscribe(Pulsekit.PubSub, "events:#{socket.assigns.selected_project.id}")
-    end
-
-    # Subscribe to new project
-    Events.subscribe(project.id)
-
+  def handle_event("time_range_changed", %{"range" => range}, socket) do
     socket =
       socket
-      |> assign(:selected_project, project)
+      |> assign(:time_range, range)
       |> load_stats()
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_fullscreen", _params, socket) do
+    {:noreply, assign(socket, :fullscreen, !socket.assigns.fullscreen)}
+  end
+
+  @impl true
+  def handle_event("exit_fullscreen", _params, socket) do
+    {:noreply, assign(socket, :fullscreen, false)}
   end
 
   @impl true
@@ -70,74 +72,84 @@ defmodule PulsekitWeb.DashboardLive do
   end
 
   defp load_stats(socket) do
-    case socket.assigns.selected_project do
+    case socket.assigns.current_organization do
       nil ->
         socket
         |> assign(:stats, %{})
         |> assign(:recent_events, [])
         |> assign(:event_types, [])
         |> assign(:total_events, 0)
+        |> assign(:timeline_data, [])
 
-      project ->
-        stats = Events.get_event_stats(project.id, :day)
-        recent_events = Events.list_events(project.id, limit: 10)
-        event_types = Events.get_recent_event_types(project.id, 5)
-        total_events = Events.count_events(project.id)
+      org ->
+        since = CoreComponents.time_range_to_since(socket.assigns.time_range)
+        stats = Events.get_event_stats_for_organization(org.id, since)
+        recent_events = Events.list_events_for_organization(org.id, limit: 10, since: since)
+        event_types = Events.get_recent_event_types_for_organization(org.id, 5, since)
+        total_events = Events.count_events_for_organization(org.id, since: since)
+        timeline_data = Events.get_event_timeline_for_organization(org.id, socket.assigns.time_range)
 
         socket
         |> assign(:stats, stats)
         |> assign(:recent_events, recent_events)
         |> assign(:event_types, event_types)
         |> assign(:total_events, total_events)
+        |> assign(:timeline_data, timeline_data)
     end
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_path={@current_path} current_organization={@current_organization} organizations={@organizations}>
+    <Layouts.app flash={@flash} current_path={@current_path} current_organization={@current_organization} organizations={@organizations} fullscreen={@fullscreen}>
       <div class="space-y-8">
         <%!-- Header --%>
-        <div class="flex items-start justify-between">
+        <div class="flex items-start justify-between flex-wrap gap-4">
           <div>
             <h1 class="text-2xl font-bold text-base-content tracking-tight">Dashboard</h1>
-            <p class="text-base-content/60 mt-1">Monitor your application health and track events in real-time</p>
+            <p class={["text-base-content/60 mt-1", @fullscreen && "hidden"]}>
+              <%= if @current_organization do %>
+                Workspace overview for <span class="font-medium text-base-content">{@current_organization.name}</span>
+              <% else %>
+                Monitor your application health and track events in real-time
+              <% end %>
+            </p>
           </div>
 
-          <%= if length(@projects) > 0 do %>
-            <div class="dropdown dropdown-end">
-              <div
-                tabindex="0"
-                role="button"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg border border-base-300 bg-base-100 hover:bg-base-200 transition-colors duration-150 cursor-pointer"
-              >
-                <.icon name="hero-folder" class="w-4 h-4 text-primary" />
-                <span class="font-medium text-sm">{if @selected_project, do: @selected_project.name, else: "Select Project"}</span>
-                <.icon name="hero-chevron-down" class="w-4 h-4 text-base-content/50" />
-              </div>
-              <ul tabindex="0" class="dropdown-content z-[1] mt-2 p-1.5 w-56 bg-base-100 rounded-lg border border-base-300 shadow-lg">
-                <%= for project <- @projects do %>
-                  <li>
-                    <button
-                      phx-click="select_project"
-                      phx-value-id={project.id}
-                      class={[
-                        "flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-left transition-colors duration-100",
-                        if(@selected_project && @selected_project.id == project.id,
-                          do: "bg-primary/10 text-primary font-medium",
-                          else: "text-base-content hover:bg-base-200"
-                        )
-                      ]}
-                    >
-                      <.icon name="hero-folder" class="w-4 h-4" />
-                      <span class="truncate">{project.name}</span>
-                      <.icon :if={@selected_project && @selected_project.id == project.id} name="hero-check" class="w-4 h-4 ml-auto" />
-                    </button>
-                  </li>
-                <% end %>
-              </ul>
-            </div>
-          <% end %>
+          <div class="flex items-center gap-3 flex-wrap">
+            <%!-- Time Range Selector --%>
+            <%= if @current_organization do %>
+              <.time_range_selector selected={@time_range} on_change="time_range_changed" />
+            <% end %>
+
+            <%!-- Fullscreen Toggle --%>
+            <button
+              id="fullscreen-toggle"
+              phx-click="toggle_fullscreen"
+              phx-hook="Fullscreen"
+              data-fullscreen={@fullscreen}
+              class={[
+                "group relative flex items-center justify-center p-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                "border border-base-300 hover:border-primary/30",
+                if(@fullscreen,
+                  do: "bg-primary text-primary-content shadow-md hover:bg-primary/90",
+                  else: "bg-base-100 text-base-content/70 hover:bg-base-200 hover:text-base-content"
+                )
+              ]}
+              title={if(@fullscreen, do: "Exit fullscreen (Esc)", else: "Enter fullscreen (F)")}
+            >
+              <.icon
+                :if={!@fullscreen}
+                name="hero-arrows-pointing-out"
+                class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
+              />
+              <.icon
+                :if={@fullscreen}
+                name="hero-arrows-pointing-in"
+                class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
+              />
+            </button>
+          </div>
         </div>
 
         <%= if length(@projects) == 0 do %>
@@ -189,6 +201,11 @@ defmodule PulsekitWeb.DashboardLive do
             />
           </div>
 
+          <%!-- Event Timeline Chart --%>
+          <%= if length(@timeline_data) > 0 do %>
+            <.event_timeline data={@timeline_data} time_range={@time_range} />
+          <% end %>
+
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <%!-- Recent Events --%>
             <div class="lg:col-span-2">
@@ -219,7 +236,15 @@ defmodule PulsekitWeb.DashboardLive do
                       >
                         <.level_indicator level={event.level} />
                         <div class="flex-1 min-w-0">
-                          <p class="font-medium text-sm text-base-content truncate">{event.type}</p>
+                          <div class="flex items-center gap-2">
+                            <p class="font-medium text-sm text-base-content truncate">{event.type}</p>
+                            <%= if event.project do %>
+                              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wide">
+                                <.icon name="hero-folder" class="w-2.5 h-2.5" />
+                                {event.project.name}
+                              </span>
+                            <% end %>
+                          </div>
                           <p class="text-xs text-base-content/50 truncate mt-0.5">{event.message || "No message"}</p>
                         </div>
                         <span class="text-xs text-base-content/40 whitespace-nowrap font-medium">
